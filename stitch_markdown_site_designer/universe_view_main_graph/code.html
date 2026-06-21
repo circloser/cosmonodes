@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cosmonodes | Universe View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..900&family=Plus+Jakarta+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .node-pulse {
+            animation: pulse-glow 4s ease-in-out infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(129, 140, 248, 0.6)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 30px rgba(129, 140, 248, 0.9)); transform: scale(1.05); }
+        }
+        .nebula-blur {
+            backdrop-filter: blur(80px) saturate(150%);
+        }
+        .constellation-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw-line 3s forwards ease-out;
+        }
+        @keyframes draw-line {
+            to { stroke-dashoffset: 0; }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+        canvas#background-stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at center, #0c1324 0%, #020617 100%);
+        }
+        .supernova-active {
+            animation: supernova-burst 0.8s ease-out forwards;
+        }
+        @keyframes supernova-burst {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(40); opacity: 0; }
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "error-container": "#93000a",
+                "deep-void": "#020617",
+                "background": "#0c1324",
+                "on-background": "#dce1fb",
+                "on-secondary-fixed-variant": "#2f2ebe",
+                "tertiary": "#ffffff",
+                "surface-bright": "#33394c",
+                "surface-variant": "#2e3447",
+                "on-surface-variant": "#c4c7c8",
+                "on-tertiary-container": "#8a33d9",
+                "on-secondary-container": "#b0b2ff",
+                "starlight-white": "#FFFFFF",
+                "surface-container-high": "#23293c",
+                "nova-violet": "#818CF8",
+                "on-tertiary": "#490080",
+                "outline": "#8e9192",
+                "secondary": "#c0c1ff",
+                "secondary-fixed": "#e1e0ff",
+                "error": "#ffb4ab",
+                "surface-container-highest": "#2e3447",
+                "node-glow": "rgba(99, 102, 241, 0.4)",
+                "surface-tint": "#c6c6c7",
+                "on-error": "#690005",
+                "tertiary-fixed": "#f0dbff",
+                "nebula-blue": "#38BDF8",
+                "inverse-on-surface": "#2a3043",
+                "primary-fixed": "#e2e2e2",
+                "on-tertiary-fixed-variant": "#6900b3",
+                "on-primary-fixed-variant": "#454747",
+                "secondary-fixed-dim": "#c0c1ff",
+                "on-primary-container": "#636565",
+                "on-error-container": "#ffdad6",
+                "inverse-surface": "#dce1fb",
+                "on-tertiary-fixed": "#2c0051",
+                "outline-variant": "#444748",
+                "surface-dim": "#0c1324",
+                "surface-container-lowest": "#070d1f",
+                "secondary-container": "#3131c0",
+                "inverse-primary": "#5d5f5f",
+                "tertiary-container": "#f0dbff",
+                "on-primary-fixed": "#1a1c1c",
+                "primary-container": "#e2e2e2",
+                "on-primary": "#2f3131",
+                "primary": "#ffffff",
+                "on-surface": "#dce1fb",
+                "surface-container-low": "#151b2d",
+                "surface": "#0c1324",
+                "surface-container": "#191f31",
+                "primary-fixed-dim": "#c6c6c7",
+                "tertiary-fixed-dim": "#ddb7ff",
+                "interface-gray": "#1E293B",
+                "on-secondary-fixed": "#07006c",
+                "on-secondary": "#1000a9"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "unit": "4px",
+                "margin-mobile": "16px",
+                "gutter": "24px",
+                "container-max": "1440px",
+                "margin-desktop": "40px"
+            },
+            "fontFamily": {
+                "headline-lg": ["Plus Jakarta Sans"],
+                "body-md": ["Plus Jakarta Sans"],
+                "display-xl": ["Plus Jakarta Sans"],
+                "label-sm": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "display-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden selection:bg-nova-violet/30">
+<!-- Ambient Cosmic Background -->
+<canvas id="background-stars"></canvas>
+<div class="fixed inset-0 pointer-events-none">
+<div class="absolute top-1/4 -left-1/4 w-[800px] h-[800px] bg-nova-violet/5 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] bg-nebula-blue/5 rounded-full blur-[100px]"></div>
+</div>
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl">
+<nav class="flex justify-between items-center px-margin-desktop py-4 w-full max-w-container-max mx-auto">
+<div class="font-headline-lg text-headline-lg font-bold tracking-tighter text-primary">Cosmonodes</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="font-body-md text-primary border-b border-primary pb-1" href="#">Universe</a>
+<a class="font-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Constellations</a>
+<a class="font-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Discover</a>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group hidden sm:block">
+<input class="bg-surface-container-highest/30 border-none rounded-full px-6 py-2 text-label-sm w-64 focus:ring-1 focus:ring-nova-violet transition-all" placeholder="Search the void..." type="text"/>
+<span class="material-symbols-outlined absolute right-4 top-2 text-on-surface-variant group-hover:text-primary">search</span>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-nebula-blue transition-all duration-300">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full border border-white/10 overflow-hidden cursor-pointer active:scale-95 transition-transform duration-200">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a futuristic digital cartographer, high-contrast cinematic lighting with violet accents, wearing minimalist obsidian-glass techwear, against a backdrop of glowing star charts and constellations, photorealistic digital art style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfQtWna8Z9UIbSavPNK1WK8YEvEm1SkgTxpaSLhp7JW4K42d17hKfr06vM2jOLKhrL-OthGjOn0QJ1azTXjfZDe8mz54ORwWDaxWBybCZBUzJsgobN_-TLXvp0ZO12KCjmOqXVhZEzoi2cizY6PL7H4S_GlGTOTJp-mvMnwUx6_O5Yksy9G9BoUPjdpFKcHjnxEv9aucmdrHlAdDsn14CbiIo9uT0YpaxSIFBOolBNEWkp3ndITuwEw8_DboXNBaLihKbrysL37eoH"/>
+</div>
+</div>
+</nav>
+</header>
+<!-- SideNavBar (HUD Style) -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 flex flex-col h-full p-margin-desktop gap-6 bg-surface-container-lowest/10 backdrop-blur-3xl border-r border-white/5 pt-24 hidden lg:flex">
+<div class="flex items-center gap-4 mb-8">
+<div class="w-12 h-12 rounded-lg bg-nova-violet/20 flex items-center justify-center border border-nova-violet/30">
+<span class="material-symbols-outlined text-nova-violet" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+<div>
+<h3 class="text-on-surface font-bold">Commander</h3>
+<p class="text-label-sm text-on-surface-variant font-label-sm">Level 4 Cartographer</p>
+</div>
+</div>
+<nav class="flex-grow flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold bg-white/5 rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span>Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-white/5 hover:text-nebula-blue transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span>Explore</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-white/5 hover:text-nebula-blue transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span>Messages</span>
+<span class="ml-auto bg-nova-violet text-deep-void text-[10px] px-2 py-0.5 rounded-full font-bold">3</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-white/5 hover:text-nebula-blue transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Archive</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-white/5 hover:text-nebula-blue transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<button class="bg-starlight-white text-deep-void py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all active:scale-95">
+<span class="material-symbols-outlined">add</span>
+            Create Star
+        </button>
+<div class="mt-auto flex flex-col gap-2 border-t border-white/5 pt-6">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>Help</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-error hover:text-error transition-all" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</aside>
+<!-- Universe Graph Layer -->
+<main class="relative w-full h-screen overflow-hidden cursor-grab active:cursor-grabbing" id="graph-container">
+<!-- SVG for lines -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" id="constellation-svg">
+<defs>
+<filter id="glow">
+<fegaussianblur result="coloredBlur" stddeviation="2.5"></fegaussianblur>
+<femerge>
+<femergenode in="coloredBlur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+<lineargradient id="line-grad" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#818CF8" stop-opacity="0.2"></stop>
+<stop offset="50%" stop-color="#38BDF8" stop-opacity="0.8"></stop>
+<stop offset="100%" stop-color="#818CF8" stop-opacity="0.2"></stop>
+</lineargradient>
+</defs>
+</svg>
+<!-- Nodes Wrapper -->
+<div class="absolute inset-0 flex items-center justify-center transition-transform duration-700 ease-out" id="nodes-canvas">
+<!-- Center Star (The User) -->
+<div class="relative group z-30" id="center-node">
+<div class="w-16 h-16 rounded-full bg-white node-pulse flex items-center justify-center cursor-pointer shadow-[0_0_40px_rgba(255,255,255,0.5)]">
+<div class="w-14 h-14 rounded-full border-2 border-deep-void overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A futuristic close-up profile portrait of a user with glowing violet eye reflections, minimalist tech-wear textures, cinematic starfield background, hyper-detailed digital photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIAMHuRi1AmbLgIMpzEn4C9zzZTYEkMq9wg6qJQynHSXl_BWcTQSscMImtSqB7esarPCkxk1_VCbt7qExZ8U3VOI_p6xHpXjd4vY7PiIqXDgY_iFzHR9ckjtpSYGrxJ8Rvgf0o5_IFdOKrMhuVRjrxl6l_xvK7j3oXRIPjIQYfwvpoWi6lS9J2LRHnmhVVhBKUhENgf0WDR9ClvA2M8xZghvdigeH-Jqb4GxfbQ_SuOnNIbQN6svfuWkWU60d2bLGz0DuVdJvpYnvg"/>
+</div>
+</div>
+<div class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-primary font-bold whitespace-nowrap tracking-widest text-label-sm uppercase">You</div>
+</div>
+<!-- Connected Node 1 (Strong) -->
+<div class="absolute transition-all duration-500 hover:scale-110 cursor-pointer" data-node="1" style="top: 25%; left: 35%;">
+<div class="w-10 h-10 rounded-full bg-nebula-blue flex items-center justify-center shadow-[0_0_20px_rgba(56,189,248,0.4)]">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A minimalist cinematic portrait of a woman with ethereal blue lighting, looking thoughtfully away, sharp digital focus, cool nebula background tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdo1tW_oC5QqvDotI-wppDRJX3P1SGDQxf1a_isRRJ3RB-xmmFspqzAufDX46RqECMv9VHls1xp_nwhnNuoselUyHADk33kmWuuSs7vsPCEdUbWB83RUAGzeu9rbMUT_4bUMH-ts97TC1iRNopzy4xoLGyfVNL0xi_lT7SXIBeqvHHaALd7aWrYRGmmlf3FCcj0AsoobzDhOfErrSIZ9cN2SHzD3ma9hg1waRaxbRivipD8aLnoItysDSI8D0mtNa4fbGmaNY3wBm0"/>
+</div>
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-nebula-blue text-[10px] font-label-sm whitespace-nowrap">Lyra</div>
+</div>
+<!-- Connected Node 2 (Medium) -->
+<div class="absolute transition-all duration-500 hover:scale-110 cursor-pointer" data-node="2" style="top: 60%; left: 65%;">
+<div class="w-8 h-8 rounded-full bg-nova-violet flex items-center justify-center shadow-[0_0_15px_rgba(129,140,248,0.3)]">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="A portrait of a creative individual in futuristic casual attire, glowing violet accent lighting, depth of field effect with distant star nodes blurred, clean aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-riGooighCSxZwb0AyWvhX8sCe3W-dSTHdhGDiGbmAwhG-iCODo-i2um6UIHd-KGZk3Fwi1f6TNUHOL6A5z2ABodIHrw_vnz4_IltNbIJ4wmHbevDdXAGU0i4WxjAXWBrAzNVjOt_yzU-i9rmArAy8BIz4shILvdLEO2j_IpB4ybHRKSCby3NgaEnNyZHjj00NxeQzAzt9eqwnP_86N5yo8cgmSCndn9-DCM6lChwFz4p8XutQZlM8E84GqjzRi3JeIgEx3NnpWT4"/>
+</div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-nova-violet text-[10px] font-label-sm whitespace-nowrap">Orion</div>
+</div>
+<!-- Node Detail Card (Hidden by Default) -->
+<div class="absolute hidden z-50 w-64 glass-card p-6 rounded-xl transition-all duration-300 opacity-0 transform translate-y-4" id="node-card">
+<div class="flex justify-between items-start mb-4">
+<span class="text-label-sm font-label-sm text-nebula-blue uppercase tracking-tighter">Connection: Binary</span>
+<button class="text-on-surface-variant hover:text-primary" id="close-card"><span class="material-symbols-outlined text-sm">close</span></button>
+</div>
+<h4 class="text-headline-lg-mobile text-starlight-white font-bold mb-1">Lyra Vega</h4>
+<p class="text-label-sm text-on-surface-variant mb-4">Met at 0x42 Nebula</p>
+<div class="flex gap-2">
+<button class="flex-1 bg-white text-deep-void text-xs font-bold py-2 rounded">Message</button>
+<button class="flex-1 border border-white/20 text-white text-xs font-bold py-2 rounded hover:bg-white/10">View Log</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Supernova Flash Container -->
+<div class="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center" id="supernova-container">
+<div class="w-2 h-2 rounded-full bg-white opacity-0 scale-0" id="supernova-flash"></div>
+</div>
+<!-- Centered FAB -->
+<div class="fixed bottom-12 left-1/2 -translate-x-1/2 z-50">
+<button class="group relative flex items-center gap-3 bg-deep-void/40 backdrop-blur-md border border-nova-violet/40 px-8 py-4 rounded-full text-starlight-white font-bold transition-all hover:bg-nova-violet hover:text-deep-void hover:border-nova-violet shadow-[0_0_30px_rgba(129,140,248,0.2)] hover:shadow-[0_0_50px_rgba(129,140,248,0.5)]" id="add-star-btn">
+<span class="material-symbols-outlined group-hover:rotate-90 transition-transform duration-500">add</span>
+<span class="uppercase tracking-widest text-sm">Add New Star</span>
+<div class="absolute inset-0 rounded-full border border-nova-violet animate-ping opacity-20 group-hover:hidden"></div>
+</button>
+</div>
+<script>
+        // Stars Background Implementation
+        const canvas = document.getElementById('background-stars');
+        const ctx = canvas.getContext('2d');
+        let width, height, stars = [];
+
+        function initStars() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            stars = [];
+            for (let i = 0; i < 400; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 1.5,
+                    opacity: Math.random(),
+                    speed: Math.random() * 0.05
+                });
+            }
+        }
+
+        function animateStars() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#FFFFFF';
+            stars.forEach(star => {
+                ctx.globalAlpha = star.opacity;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                star.opacity += star.speed;
+                if (star.opacity > 1 || star.opacity < 0) star.speed *= -1;
+            });
+            requestAnimationFrame(animateStars);
+        }
+
+        window.addEventListener('resize', initStars);
+        initStars();
+        animateStars();
+
+        // Constellation Lines logic
+        const svg = document.getElementById('constellation-svg');
+        const centerNode = document.getElementById('center-node');
+        const nodes = document.querySelectorAll('[data-node]');
+
+        function drawLines() {
+            svg.innerHTML = `
+                <defs>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+            `;
+            const centerRect = centerNode.getBoundingClientRect();
+            const cx = centerRect.left + centerRect.width / 2;
+            const cy = centerRect.top + centerRect.height / 2;
+
+            nodes.forEach(node => {
+                const rect = node.getBoundingClientRect();
+                const nx = rect.left + rect.width / 2;
+                const ny = rect.top + rect.height / 2;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', cx);
+                line.setAttribute('y1', cy);
+                line.setAttribute('x2', nx);
+                line.setAttribute('y2', ny);
+                line.setAttribute('stroke', 'rgba(129, 140, 248, 0.3)');
+                line.setAttribute('stroke-width', '1');
+                line.setAttribute('class', 'constellation-line');
+                line.setAttribute('filter', 'url(#glow)');
+                svg.appendChild(line);
+            });
+        }
+
+        // Initial draw and redraw on resize
+        setTimeout(drawLines, 100);
+        window.addEventListener('resize', drawLines);
+
+        // Interaction for Node Details
+        const nodeCard = document.getElementById('node-card');
+        const closeCard = document.getElementById('close-card');
+
+        nodes.forEach(node => {
+            node.addEventListener('click', (e) => {
+                const rect = node.getBoundingClientRect();
+                nodeCard.style.top = `${rect.top - 180}px`;
+                nodeCard.style.left = `${rect.left - 100}px`;
+                nodeCard.classList.remove('hidden');
+                setTimeout(() => {
+                    nodeCard.classList.remove('opacity-0', 'translate-y-4');
+                }, 50);
+            });
+        });
+
+        closeCard.addEventListener('click', () => {
+            nodeCard.classList.add('opacity-0', 'translate-y-4');
+            setTimeout(() => {
+                nodeCard.classList.add('hidden');
+            }, 300);
+        });
+
+        // Add Star Animation (Supernova)
+        const addStarBtn = document.getElementById('add-star-btn');
+        const flash = document.getElementById('supernova-flash');
+
+        addStarBtn.addEventListener('click', () => {
+            flash.classList.add('supernova-active');
+            setTimeout(() => {
+                flash.classList.remove('supernova-active');
+                // Simulate adding a node
+                alert("Seeking new stellar connections in the quadrant...");
+            }, 800);
+        });
+
+        // Simple Pan Interaction
+        const container = document.getElementById('graph-container');
+        const canvasEl = document.getElementById('nodes-canvas');
+        let isDragging = false;
+        let startX, startY, scrollX = 0, scrollY = 0;
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - scrollX;
+            startY = e.clientY - scrollY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            scrollX = e.clientX - startX;
+            scrollY = e.clientY - startY;
+            canvasEl.style.transform = `translate(${scrollX}px, ${scrollY}px)`;
+            drawLines(); // Update lines as we move
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+    </script>
+</body></html>

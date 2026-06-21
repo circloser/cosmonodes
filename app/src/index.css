@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #020617;
+  color: #dce1fb;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-hud {
+    background: rgba(7, 13, 31, 0.35);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .btn-star {
+    @apply bg-starlight-white text-deep-void font-semibold rounded-lg transition-all active:scale-95;
+  }
+  .btn-star:hover {
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.35);
+  }
+
+  .btn-ghost {
+    @apply border border-white/20 text-white rounded-lg transition-all;
+  }
+  .btn-ghost:hover {
+    @apply bg-white/10;
+  }
+
+  .input-cosmic {
+    @apply w-full bg-transparent border-0 border-b border-white/20 px-1 py-2 text-on-surface outline-none transition-colors;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.03em;
+  }
+  .input-cosmic:focus {
+    @apply border-nebula-blue;
+    box-shadow: 0 1px 0 0 #38bdf8;
+  }
+}
+
+.label-mono {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}

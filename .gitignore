@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# build output
+dist/
+**/dist/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# OMC tooling state (keep root specs/plans/prd as docs, drop transient state anywhere)
+**/.omc/state/
+**/.omc/logs/
+**/.omc/sessions/
+**/.omc/research/
+**/.omc/notepad.md
+**/.omc/project-memory.json
+app/.omc/
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# claude local
+.claude/settings.local.json

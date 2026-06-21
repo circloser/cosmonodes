@@ -1,0 +1,35 @@
+RALPH PROGRESS — Cosmonodes (로컬 동작 MVP 데모)
+Plan: .omc/plans/cosmonodes-consensus-plan.md
+PRD:  .omc/prd.json
+
+== 결정/제약 ==
+- Supabase/Google OAuth는 사용자 제공 크리덴셜 필요 → 백엔드 연동은 follow-up(docs/SUPABASE_SETUP.md).
+- 이번 런: 크리덴셜 없이 동작하는 프론트엔드 + LocalStorageDataProvider로 전체 핵심 루프 구현.
+- 데이터 계층은 DataProvider 인터페이스로 분리 → SupabaseDataProvider로 교체 가능.
+- 환경: Node 24, React 19, Vite 8, TypeScript 6, Tailwind 3, Vitest 4. tsconfig가 verbatimModuleSyntax/erasableSyntaxOnly/noUnusedLocals 강제 → import type 사용, enum 금지.
+
+== 구현 파일 ==
+- src/domain/types.ts — 도메인 모델. GraphNode.note는 degree<=1만 존재(AC17 불변식).
+- src/data/DataProvider.ts — 인터페이스(백엔드 교체 지점).
+- src/data/LocalStorageDataProvider.ts — 저장 구현 + getGraph()가 degree-2에 note 미포함.
+- src/data/seed.ts — 시드 + makeMatchedUserNetwork + makePerfDataset(300).
+- src/data/DataProvider.test.ts — note 미노출/동의 게이트 단위테스트.
+- src/store/useGraphStore.ts — Zustand 상태/액션 + perfMode.
+- src/components/* — CosmicBackground, GraphView(react-force-graph-2d), NodeCard, AddStarModal(동의게이트+supernova), Supernova, ProfilePanel, FpsOverlay, AppShell.
+- src/lib/colors.ts, src/lib/id.ts.
+- README.md, docs/SUPABASE_SETUP.md.
+
+== 학습/주의 ==
+- vitest/jsdom 타입이 프로덕션 tsc 빌드로 새지 않게: 테스트 설정은 vitest.config.ts(별도, tsc include 밖)로, tsconfig.app.json에서 *.test.ts/src/test exclude.
+- 초기 `npm install --silent`가 dev deps 설치를 조용히 실패한 적 있음 → 비-silent 재설치로 복구.
+- react-force-graph-2d: 노드/링크 객체를 엔진이 x/y로 변형하므로 store 객체를 clone해서 전달, signature로만 재시뮬.
+
+== 검증 결과 ==
+- npm run build: PASS (tsc + vite, 1058 modules, dist 생성)
+- npm test (vitest): PASS 5/5 (note 미노출 불변식 AC17, 동의 게이트 포함)
+- npm run lint: PASS 0 errors (초기 2건 react-hooks/set-state-in-effect → Supernova key 리마운트, ProfilePanel lazy init으로 수정)
+- 런타임: dev 서버 200, React 마운트 확인, DOM에 셸+시드데이터(나의 별 5) 렌더 확인.
+- 한계: 헤드리스 프리뷰가 requestAnimationFrame을 일시정지 → 캔버스(별자리/포스그래프) 그리기 루프가 안 돌아 스크린샷/픽셀 검증 불가. 코드는 표준(react-force-graph-2d)이고 데이터는 주입 확인됨 → 실제 브라우저(npm run dev → localhost:5173)에서 확인 필요.
+
+== 상태 ==
+- US-001~US-010 전부 passes:true. 빌드/테스트/린트 그린. 리뷰어 검증 단계로 진행.
