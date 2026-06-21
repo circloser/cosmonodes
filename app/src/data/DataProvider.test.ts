@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { LocalStorageDataProvider } from './LocalStorageDataProvider'
 import { makeSeed } from './seed'
+import { filterGraphByGroups } from '../lib/graphFilter'
 
 function freshProvider(): LocalStorageDataProvider {
   // isolated in-memory dataset (no shared localStorage between tests)
@@ -60,5 +61,44 @@ describe('LocalStorageDataProvider — privacy invariant (AC17)', () => {
     expect(await provider.hasConsent('third_party_info')).toBe(false)
     await provider.recordConsent('third_party_info')
     expect(await provider.hasConsent('third_party_info')).toBe(true)
+  })
+})
+
+describe('groups', () => {
+  let provider: LocalStorageDataProvider
+
+  beforeEach(() => {
+    provider = freshProvider()
+  })
+
+  it('seed ships with default groups and colors them on degree-1 nodes', async () => {
+    const groups = await provider.listGroups()
+    expect(groups.length).toBeGreaterThan(0)
+    const graph = await provider.getGraph()
+    const colored = graph.nodes.filter((n) => n.degree === 1 && typeof n.color === 'string')
+    expect(colored.length).toBeGreaterThan(0)
+  })
+
+  it('a new node inherits its group color in the graph projection', async () => {
+    const g = await provider.addGroup('동호회', '#34D399')
+    await provider.addNode({ label: '러닝메이트', note: '', groupId: g.id })
+    const graph = await provider.getGraph()
+    const node = graph.nodes.find((n) => n.label === '러닝메이트')
+    expect(node?.groupId).toBe(g.id)
+    expect(node?.color).toBe('#34D399')
+  })
+
+  it('filterGraphByGroups hides nodes of toggled-off groups (self always kept)', async () => {
+    const groups = await provider.listGroups()
+    const graph = await provider.getGraph()
+    const targetGroup = groups[0]
+    const before = graph.nodes.filter((n) => n.degree === 1 && n.groupId === targetGroup.id).length
+    expect(before).toBeGreaterThan(0)
+
+    const filtered = filterGraphByGroups(graph, [targetGroup.id])
+    const after = filtered.nodes.filter((n) => n.degree === 1 && n.groupId === targetGroup.id).length
+    expect(after).toBe(0)
+    // self node (degree 0) is never removed
+    expect(filtered.nodes.some((n) => n.degree === 0)).toBe(true)
   })
 })

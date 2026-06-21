@@ -7,6 +7,7 @@ interface Props {
   perfMode: boolean
   onAddStar: () => void
   onOpenProfile: () => void
+  onOpenGroups: () => void
   onTogglePerf: () => void
   children?: ReactNode
 }
@@ -18,6 +19,7 @@ export default function AppShell({
   perfMode,
   onAddStar,
   onOpenProfile,
+  onOpenGroups,
   onTogglePerf,
 }: Props) {
   return (
@@ -29,6 +31,13 @@ export default function AppShell({
             Cosmonodes
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={onOpenGroups}
+              className="label-mono rounded-full px-3 py-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant transition-colors hover:text-white"
+              title="그룹 색상 / 켜고 끄기"
+            >
+              그룹
+            </button>
             <button
               onClick={onTogglePerf}
               className={`label-mono rounded-full px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors ${
@@ -93,6 +102,9 @@ export default function AppShell({
       <nav className="glass-hud fixed bottom-0 z-40 flex w-full items-center justify-around py-3 lg:hidden">
         <button onClick={onOpenProfile} className="label-mono text-[11px] text-on-surface-variant">
           프로필
+        </button>
+        <button onClick={onOpenGroups} className="label-mono text-[11px] text-on-surface-variant">
+          그룹
         </button>
         <button onClick={onTogglePerf} className="label-mono text-[11px] text-on-surface-variant">
           {perfMode ? '일반' : '성능'}

@@ -4,6 +4,7 @@ import type {
   GraphData,
   GraphLink,
   GraphNode,
+  Group,
   IntroRequest,
   LinkStrength,
   MatchRecord,
@@ -41,7 +42,10 @@ export class LocalStorageDataProvider implements DataProvider {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) {
         try {
-          return JSON.parse(raw) as Dataset
+          const parsed = JSON.parse(raw) as Dataset
+          // migrate datasets persisted before groups existed
+          if (!parsed.groups) parsed.groups = makeSeed().groups
+          return parsed
         } catch {
           /* fall through to fresh seed */
         }
@@ -70,6 +74,18 @@ export class LocalStorageDataProvider implements DataProvider {
     return { ...this.data.profile }
   }
 
+  // ---- groups ----
+  async listGroups(): Promise<Group[]> {
+    return this.data.groups.map((g) => ({ ...g }))
+  }
+
+  async addGroup(name: string, color: string): Promise<Group> {
+    const group: Group = { id: uid('group'), name: name.trim() || '새 그룹', color }
+    this.data.groups.push(group)
+    this.persist()
+    return { ...group }
+  }
+
   // ---- nodes ----
   async listNodes(): Promise<NodeRecord[]> {
     return this.data.nodes.filter((n) => n.ownerId === ME).map((n) => ({ ...n }))
@@ -81,6 +97,7 @@ export class LocalStorageDataProvider implements DataProvider {
       ownerId: ME,
       label: input.label.trim() || '이름 없는 별',
       note: input.note.trim(),
+      groupId: input.groupId ?? null,
       matchedUserId: null,
       createdAt: Date.now(),
     }
@@ -223,12 +240,22 @@ export class LocalStorageDataProvider implements DataProvider {
     const myNodes = this.data.nodes.filter((n) => n.ownerId === ME)
     const myEdges = this.data.edges.filter((e) => e.ownerId === ME)
 
+    const groupColor = new Map(this.data.groups.map((g) => [g.id, g.color]))
+
     const nodes: GraphNode[] = [
       { id: SELF_NODE, label: this.data.profile.displayName, degree: 0, matched: true },
     ]
     for (const n of myNodes) {
       // degree-1: my own contact — note is allowed (owner only).
-      nodes.push({ id: n.id, label: n.label, degree: 1, matched: n.matchedUserId !== null, note: n.note })
+      nodes.push({
+        id: n.id,
+        label: n.label,
+        degree: 1,
+        matched: n.matchedUserId !== null,
+        groupId: n.groupId,
+        color: n.groupId ? groupColor.get(n.groupId) : undefined,
+        note: n.note,
+      })
     }
 
     const links: GraphLink[] = myEdges.map((e) => ({

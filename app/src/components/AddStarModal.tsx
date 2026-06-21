@@ -1,24 +1,43 @@
 import { useState } from 'react'
 import { useGraphStore } from '../store/useGraphStore'
+import { GROUP_PALETTE } from '../data/seed'
 
 interface Props {
   onClose: () => void
 }
 
 export default function AddStarModal({ onClose }: Props) {
-  const { addStar, provider } = useGraphStore()
+  const { addStar, addGroup, groups, provider } = useGraphStore()
   const [label, setLabel] = useState('')
   const [note, setNote] = useState('')
+  const [groupId, setGroupId] = useState<string | null>(groups[0]?.id ?? null)
   const [consent, setConsent] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  const [creatingGroup, setCreatingGroup] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupColor, setNewGroupColor] = useState(GROUP_PALETTE[0])
+
+  const createGroup = async () => {
+    if (!newGroupName.trim()) {
+      setError('그룹 이름을 입력해 주세요.')
+      return
+    }
+    setBusy(true)
+    const g = await addGroup(newGroupName, newGroupColor)
+    setBusy(false)
+    setGroupId(g.id)
+    setCreatingGroup(false)
+    setNewGroupName('')
+    setError('')
+  }
 
   const submit = async () => {
     if (!label.trim()) {
       setError('별의 이름을 입력해 주세요.')
       return
     }
-    // AC16: storing third-party info requires explicit consent.
     if (note.trim() && !consent) {
       setError('타인의 정보를 입력하려면 아래 동의가 필요합니다.')
       return
@@ -27,7 +46,7 @@ export default function AddStarModal({ onClose }: Props) {
     if (note.trim() && consent) {
       await provider.recordConsent('third_party_info')
     }
-    await addStar(label, note)
+    await addStar(label, note, groupId)
     setBusy(false)
     onClose()
   }
@@ -49,6 +68,68 @@ export default function AddStarModal({ onClose }: Props) {
           onChange={(e) => setLabel(e.target.value)}
           placeholder="예: 김서연"
         />
+
+        {/* group selector */}
+        <label className="label-mono mb-2 block text-[11px] uppercase tracking-wider text-on-surface-variant">
+          그룹
+        </label>
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setGroupId(null)}
+            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+              groupId === null ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'
+            }`}
+          >
+            없음
+          </button>
+          {groups.map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => setGroupId(g.id)}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                groupId === g.id ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'
+              }`}
+            >
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: g.color }} />
+              {g.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setCreatingGroup((v) => !v)}
+            className="rounded-full border border-dashed border-white/25 px-3 py-1.5 text-xs text-on-surface-variant hover:text-white"
+          >
+            ＋ 새 그룹
+          </button>
+        </div>
+
+        {creatingGroup && (
+          <div className="mb-4 rounded-xl border border-white/10 p-3">
+            <input
+              className="input-cosmic mb-3"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder="그룹 이름 (예: 동호회)"
+            />
+            <div className="mb-3 flex flex-wrap gap-2">
+              {GROUP_PALETTE.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setNewGroupColor(c)}
+                  className={`h-6 w-6 rounded-full transition-transform ${newGroupColor === c ? 'ring-2 ring-white scale-110' : ''}`}
+                  style={{ backgroundColor: c }}
+                  aria-label={`색상 ${c}`}
+                />
+              ))}
+            </div>
+            <button disabled={busy} onClick={createGroup} className="btn-ghost w-full py-2 text-sm">
+              그룹 만들기
+            </button>
+          </div>
+        )}
 
         <label className="label-mono mb-1 block text-[11px] uppercase tracking-wider text-on-surface-variant">
           메모 (비공개)

@@ -7,8 +7,8 @@ export const COLORS = {
   onSurfaceVariant: '#c4c7c8',
 } as const
 
-/** Visual spec for a node based on its degree + match state. */
-export function nodeStyle(degree: number, matched: boolean): {
+/** Visual spec for a node based on its degree + match state (+ optional group color). */
+export function nodeStyle(degree: number, matched: boolean, color?: string): {
   radius: number
   fill: string
   glow: string
@@ -20,10 +20,11 @@ export function nodeStyle(degree: number, matched: boolean): {
     return { radius: 9, fill: COLORS.starlight, glow: '#ffffff', glowBlur: 22, alpha: 1, showLabel: true }
   }
   if (degree === 1) {
+    const fill = color ?? (matched ? COLORS.nebulaBlue : COLORS.novaViolet)
     return {
       radius: matched ? 6.5 : 5.5,
-      fill: matched ? COLORS.nebulaBlue : COLORS.novaViolet,
-      glow: matched ? COLORS.nebulaBlue : COLORS.novaViolet,
+      fill,
+      glow: fill,
       glowBlur: matched ? 16 : 10,
       alpha: 1,
       showLabel: true,

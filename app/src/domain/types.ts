@@ -15,6 +15,13 @@ export interface Profile {
   avatarColor: string
 }
 
+/** A user-defined grouping (가족/친구/직장 …) with its own color. */
+export interface Group {
+  id: string
+  name: string
+  color: string
+}
+
 /**
  * A star. `note` holds private third-party info typed by the owner and MUST NOT
  * be exposed to anyone but the owner (see getGraph / GraphView2DNode).
@@ -24,6 +31,7 @@ export interface NodeRecord {
   ownerId: string
   label: string
   note: string
+  groupId: string | null
   matchedUserId: string | null
   createdAt: number
 }
@@ -71,6 +79,10 @@ export interface GraphNode {
   label: string
   degree: NodeDegree
   matched: boolean
+  /** Group membership for degree-1 nodes (drives color + visibility toggles). */
+  groupId?: string | null
+  /** Resolved group color for degree-1 nodes, if grouped. */
+  color?: string
   /** Present ONLY for nodes owned by the requesting user (degree 0 and 1). */
   note?: string
 }

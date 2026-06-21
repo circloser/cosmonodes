@@ -2,6 +2,7 @@ import type {
   Consent,
   EdgeRecord,
   GraphData,
+  Group,
   IntroRequest,
   LinkStrength,
   MatchRecord,
@@ -12,6 +13,7 @@ import type {
 export interface AddNodeInput {
   label: string
   note: string
+  groupId?: string | null
 }
 
 /**
@@ -22,6 +24,9 @@ export interface AddNodeInput {
 export interface DataProvider {
   getProfile(): Promise<Profile>
   saveProfile(patch: Partial<Omit<Profile, 'userId'>>): Promise<Profile>
+
+  listGroups(): Promise<Group[]>
+  addGroup(name: string, color: string): Promise<Group>
 
   listNodes(): Promise<NodeRecord[]>
   addNode(input: AddNodeInput): Promise<NodeRecord>

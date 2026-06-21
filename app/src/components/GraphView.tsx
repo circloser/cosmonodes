@@ -95,7 +95,7 @@ export default function GraphView({ graph, onSelect }: Props) {
         nodeCanvasObject={(n: object, ctx: CanvasRenderingContext2D, scale: number) => {
           const node = n as FGNode
           if (node.x === undefined || node.y === undefined) return
-          const s = nodeStyle(node.degree, node.matched)
+          const s = nodeStyle(node.degree, node.matched, node.color)
           ctx.save()
           ctx.globalAlpha = s.alpha
           ctx.shadowColor = s.glow
