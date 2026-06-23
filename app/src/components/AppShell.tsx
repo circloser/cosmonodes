@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import SearchBar from './SearchBar'
 
 interface Props {
   profileName: string
@@ -6,6 +7,7 @@ interface Props {
   matchedCount: number
   perfMode: boolean
   onAddStar: () => void
+  onQuickAdd: () => void
   onOpenProfile: () => void
   onOpenGroups: () => void
   onTogglePerf: () => void
@@ -18,6 +20,7 @@ export default function AppShell({
   matchedCount,
   perfMode,
   onAddStar,
+  onQuickAdd,
   onOpenProfile,
   onOpenGroups,
   onTogglePerf,
@@ -31,6 +34,9 @@ export default function AppShell({
             Cosmonodes
           </div>
           <div className="flex items-center gap-3">
+            <div className="hidden sm:block">
+              <SearchBar />
+            </div>
             <button
               onClick={onOpenGroups}
               className="label-mono rounded-full px-3 py-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant transition-colors hover:text-white"
@@ -82,6 +88,9 @@ export default function AppShell({
         <button onClick={onAddStar} className="btn-star flex items-center justify-center gap-2 py-3">
           <span>＋</span> 별 추가
         </button>
+        <button onClick={onQuickAdd} className="btn-ghost flex items-center justify-center gap-2 py-2.5 text-sm">
+          여러 명 빠르게
+        </button>
         <p className="mt-auto text-xs leading-relaxed text-on-surface-variant/70">
           노드를 드래그해 우주를 펼쳐보세요. 별을 클릭하면 관계를 관리할 수 있어요.
         </p>
@@ -98,18 +107,26 @@ export default function AppShell({
         </button>
       </div>
 
-      {/* Mobile bottom nav */}
-      <nav className="glass-hud fixed bottom-0 z-40 flex w-full items-center justify-around py-3 lg:hidden">
-        <button onClick={onOpenProfile} className="label-mono text-[11px] text-on-surface-variant">
-          프로필
-        </button>
-        <button onClick={onOpenGroups} className="label-mono text-[11px] text-on-surface-variant">
-          그룹
-        </button>
-        <button onClick={onTogglePerf} className="label-mono text-[11px] text-on-surface-variant">
-          {perfMode ? '일반' : '성능'}
-        </button>
-      </nav>
+      {/* Mobile bottom area: search (very small screens) + nav */}
+      <div className="fixed bottom-0 z-40 w-full lg:hidden">
+        <div className="flex justify-center px-4 pb-2 sm:hidden">
+          <SearchBar />
+        </div>
+        <nav className="glass-hud flex w-full items-center justify-around py-3">
+          <button onClick={onQuickAdd} className="label-mono text-[11px] text-on-surface-variant">
+            빠른추가
+          </button>
+          <button onClick={onOpenProfile} className="label-mono text-[11px] text-on-surface-variant">
+            프로필
+          </button>
+          <button onClick={onOpenGroups} className="label-mono text-[11px] text-on-surface-variant">
+            그룹
+          </button>
+          <button onClick={onTogglePerf} className="label-mono text-[11px] text-on-surface-variant">
+            {perfMode ? '일반' : '성능'}
+          </button>
+        </nav>
+      </div>
     </>
   )
 }

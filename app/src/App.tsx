@@ -6,6 +6,7 @@ import CosmicBackground from './components/CosmicBackground'
 import GraphView from './components/GraphView'
 import NodeCard from './components/NodeCard'
 import AddStarModal from './components/AddStarModal'
+import QuickAddModal from './components/QuickAddModal'
 import ProfilePanel from './components/ProfilePanel'
 import GroupsPanel from './components/GroupsPanel'
 import Supernova from './components/Supernova'
@@ -13,10 +14,22 @@ import FpsOverlay from './components/FpsOverlay'
 import AppShell from './components/AppShell'
 
 export default function App() {
-  const { load, loading, graph, profile, nodes, matches, groups, hiddenGroupIds, perfMode, togglePerfMode } =
-    useGraphStore()
+  const {
+    load,
+    loading,
+    graph,
+    profile,
+    nodes,
+    matches,
+    groups,
+    hiddenGroupIds,
+    searchQuery,
+    perfMode,
+    togglePerfMode,
+  } = useGraphStore()
   const [selected, setSelected] = useState<GraphNode | null>(null)
   const [showAdd, setShowAdd] = useState(false)
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showGroups, setShowGroups] = useState(false)
 
@@ -25,13 +38,29 @@ export default function App() {
   }, [load])
 
   const visibleGraph = useMemo(() => filterGraphByGroups(graph, hiddenGroupIds), [graph, hiddenGroupIds])
+
+  // search: match by node label or its group name; null = search inactive
+  const highlightIds = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return null
+    const groupName = new Map(groups.map((g) => [g.id, g.name.toLowerCase()]))
+    const ids = new Set<string>()
+    for (const n of visibleGraph.nodes) {
+      if (n.degree !== 1) continue
+      const inLabel = n.label.toLowerCase().includes(q)
+      const inGroup = n.groupId ? (groupName.get(n.groupId) ?? '').includes(q) : false
+      if (inLabel || inGroup) ids.add(n.id)
+    }
+    return ids
+  }, [searchQuery, visibleGraph, groups])
+
   const matchedCount = matches.filter((m) => m.status === 'accepted').length
 
   return (
     <div className="relative h-full w-full overflow-hidden">
       <CosmicBackground />
 
-      {!loading && <GraphView graph={visibleGraph} onSelect={(n) => setSelected(n)} />}
+      {!loading && <GraphView graph={visibleGraph} onSelect={(n) => setSelected(n)} highlightIds={highlightIds} />}
 
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -45,10 +74,17 @@ export default function App() {
         matchedCount={matchedCount}
         perfMode={perfMode}
         onAddStar={() => setShowAdd(true)}
+        onQuickAdd={() => setShowQuickAdd(true)}
         onOpenProfile={() => setShowProfile(true)}
         onOpenGroups={() => setShowGroups((v) => !v)}
         onTogglePerf={togglePerfMode}
       />
+
+      {searchQuery.trim() && highlightIds && (
+        <div className="label-mono fixed left-1/2 top-16 z-[60] -translate-x-1/2 rounded-full bg-deep-void/70 px-4 py-1.5 text-[11px] text-on-surface-variant backdrop-blur">
+          “{searchQuery}” · {highlightIds.size}개 일치
+        </div>
+      )}
 
       {selected && (
         <div className="fixed right-5 top-20 z-[70] lg:right-10">
@@ -56,13 +92,14 @@ export default function App() {
         </div>
       )}
 
-      {showGroups && groups.length >= 0 && (
+      {showGroups && (
         <div className="fixed left-5 top-20 z-[70] lg:left-64">
           <GroupsPanel onClose={() => setShowGroups(false)} />
         </div>
       )}
 
       {showAdd && <AddStarModal onClose={() => setShowAdd(false)} />}
+      {showQuickAdd && <QuickAddModal onClose={() => setShowQuickAdd(false)} />}
       {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
 
       <Supernova />

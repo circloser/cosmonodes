@@ -17,6 +17,8 @@ interface ForceGraphHandle {
 interface Props {
   graph: GraphData
   onSelect: (node: GraphNode) => void
+  /** When set (search active), nodes not in this set are dimmed; matches get a ring. */
+  highlightIds?: Set<string> | null
 }
 
 /** Signature so we only rebuild (and restart the simulation) on real changes. */
@@ -28,7 +30,7 @@ function signature(g: GraphData): string {
   )
 }
 
-export default function GraphView({ graph, onSelect }: Props) {
+export default function GraphView({ graph, onSelect, highlightIds }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fgRef = useRef<ForceGraphHandle | null>(null)
   const [size, setSize] = useState({ w: 800, h: 600 })
@@ -96,10 +98,12 @@ export default function GraphView({ graph, onSelect }: Props) {
           const node = n as FGNode
           if (node.x === undefined || node.y === undefined) return
           const s = nodeStyle(node.degree, node.matched, node.color)
+          const dim = highlightIds ? !(node.degree === 0 || highlightIds.has(node.id)) : false
+          const isMatch = highlightIds ? node.degree !== 0 && highlightIds.has(node.id) : false
           ctx.save()
-          ctx.globalAlpha = s.alpha
+          ctx.globalAlpha = s.alpha * (dim ? 0.12 : 1)
           ctx.shadowColor = s.glow
-          ctx.shadowBlur = s.glowBlur
+          ctx.shadowBlur = dim ? 0 : s.glowBlur
           ctx.beginPath()
           ctx.arc(node.x, node.y, s.radius, 0, Math.PI * 2)
           ctx.fillStyle = s.fill
@@ -110,11 +114,20 @@ export default function GraphView({ graph, onSelect }: Props) {
             ctx.strokeStyle = COLORS.deepVoid
             ctx.stroke()
           }
+          if (isMatch) {
+            ctx.shadowBlur = 0
+            ctx.globalAlpha = 1
+            ctx.lineWidth = 1.5
+            ctx.strokeStyle = COLORS.starlight
+            ctx.beginPath()
+            ctx.arc(node.x, node.y, s.radius + 3, 0, Math.PI * 2)
+            ctx.stroke()
+          }
           ctx.restore()
 
           if (s.showLabel && scale > 0.6) {
             ctx.save()
-            ctx.globalAlpha = node.degree === 0 ? 1 : 0.85
+            ctx.globalAlpha = (dim ? 0.15 : 1) * (node.degree === 0 ? 1 : 0.85)
             ctx.font = `${node.degree === 0 ? 700 : 500} ${node.degree === 0 ? 5.5 : 4}px "Plus Jakarta Sans", sans-serif`
             ctx.fillStyle = node.degree === 0 ? COLORS.starlight : COLORS.onSurfaceVariant
             ctx.textAlign = 'center'

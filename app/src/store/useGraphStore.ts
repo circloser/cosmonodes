@@ -14,13 +14,16 @@ interface GraphStore {
   matches: MatchRecord[]
   groups: Group[]
   hiddenGroupIds: string[]
+  searchQuery: string
   loading: boolean
   perfMode: boolean
   lastSupernovaAt: number
 
   load: () => Promise<void>
   refresh: () => Promise<void>
+  setSearch: (q: string) => void
   addStar: (label: string, note: string, groupId: string | null) => Promise<void>
+  addStarsBulk: (labels: string[], groupId: string | null) => Promise<number>
   editNode: (id: string, label: string, note: string) => Promise<void>
   removeNode: (id: string) => Promise<void>
   connect: (fromNodeId: string, toNodeId: string) => Promise<void>
@@ -43,6 +46,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   matches: [],
   groups: [],
   hiddenGroupIds: [],
+  searchQuery: '',
   loading: true,
   perfMode: false,
   lastSupernovaAt: 0,
@@ -70,10 +74,22 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     set({ graph, nodes, matches, groups })
   },
 
+  setSearch: (q) => set({ searchQuery: q }),
+
   addStar: async (label, note, groupId) => {
     await provider.addNode({ label, note, groupId })
     set({ lastSupernovaAt: Date.now() })
     await get().refresh()
+  },
+
+  addStarsBulk: async (labels, groupId) => {
+    const clean = labels.map((l) => l.trim()).filter(Boolean)
+    for (const label of clean) {
+      await provider.addNode({ label, note: '', groupId })
+    }
+    if (clean.length > 0) set({ lastSupernovaAt: Date.now() })
+    await get().refresh()
+    return clean.length
   },
 
   editNode: async (id, label, note) => {
