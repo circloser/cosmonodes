@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GraphData, Group, MatchRecord, NodeRecord, Profile } from '../domain/types'
+import type { GraphData, Group, MatchRecord, NodePatch, NodeRecord, Profile } from '../domain/types'
 import type { DataProvider } from '../data/DataProvider'
 import { LocalStorageDataProvider } from '../data/LocalStorageDataProvider'
 import { makePerfDataset } from '../data/seed'
@@ -24,7 +24,7 @@ interface GraphStore {
   setSearch: (q: string) => void
   addStar: (label: string, note: string, groupId: string | null) => Promise<void>
   addStarsBulk: (labels: string[], groupId: string | null) => Promise<number>
-  editNode: (id: string, label: string, note: string) => Promise<void>
+  updateNode: (id: string, patch: NodePatch) => Promise<void>
   removeNode: (id: string) => Promise<void>
   connect: (fromNodeId: string, toNodeId: string) => Promise<void>
   invite: (nodeId: string) => Promise<MatchRecord>
@@ -32,6 +32,8 @@ interface GraphStore {
   requestIntro: (farNodeId: string) => Promise<void>
   saveProfile: (patch: Partial<Omit<Profile, 'userId'>>) => Promise<void>
   addGroup: (name: string, color: string) => Promise<Group>
+  updateGroup: (id: string, patch: Partial<Pick<Group, 'name' | 'color'>>) => Promise<void>
+  deleteGroup: (id: string) => Promise<void>
   toggleGroup: (id: string) => void
   togglePerfMode: () => void
 }
@@ -92,8 +94,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     return clean.length
   },
 
-  editNode: async (id, label, note) => {
-    await provider.updateNode(id, { label, note })
+  updateNode: async (id, patch) => {
+    await provider.updateNode(id, patch)
     await get().refresh()
   },
 
@@ -135,6 +137,17 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     const group = await provider.addGroup(name, color)
     set({ groups: [...get().groups, group] })
     return group
+  },
+
+  updateGroup: async (id, patch) => {
+    await provider.updateGroup(id, patch)
+    await get().refresh()
+  },
+
+  deleteGroup: async (id) => {
+    await provider.deleteGroup(id)
+    set({ hiddenGroupIds: get().hiddenGroupIds.filter((g) => g !== id) })
+    await get().refresh()
   },
 
   toggleGroup: (id) => {

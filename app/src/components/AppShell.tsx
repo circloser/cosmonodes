@@ -5,6 +5,7 @@ interface Props {
   profileName: string
   starCount: number
   matchedCount: number
+  reminderCount: number
   perfMode: boolean
   onAddStar: () => void
   onQuickAdd: () => void
@@ -18,6 +19,7 @@ export default function AppShell({
   profileName,
   starCount,
   matchedCount,
+  reminderCount,
   perfMode,
   onAddStar,
   onQuickAdd,
@@ -83,6 +85,10 @@ export default function AppShell({
           <div className="flex justify-between">
             <span>매칭된 우주</span>
             <span className="text-nebula-blue">{matchedCount}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>연락할 별</span>
+            <span className={reminderCount > 0 ? 'text-amber-300' : 'text-on-surface'}>{reminderCount}</span>
           </div>
         </div>
         <button onClick={onAddStar} className="btn-star flex items-center justify-center gap-2 py-3">

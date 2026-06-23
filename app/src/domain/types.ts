@@ -32,9 +32,20 @@ export interface NodeRecord {
   label: string
   note: string
   groupId: string | null
+  /** Relationship intelligence (the "management tool" layer). */
+  closeness: number // 1-5 intimacy → drives link width & distance
+  lastContactAt: number | null
+  nextReminderAt: number | null
+  birthday: string | null // 'MM-DD' or 'YYYY-MM-DD'
+  interests: string
   matchedUserId: string | null
   createdAt: number
 }
+
+/** Fields the owner can edit on one of their own stars. */
+export type NodePatch = Partial<
+  Pick<NodeRecord, 'label' | 'note' | 'groupId' | 'closeness' | 'lastContactAt' | 'nextReminderAt' | 'birthday' | 'interests'>
+>
 
 export interface EdgeRecord {
   id: string
@@ -93,6 +104,8 @@ export interface GraphLink {
   target: string
   strength: LinkStrength
   faint: boolean
+  /** Intimacy of the connected contact (1-5) → line width. */
+  closeness?: number
 }
 
 export interface GraphData {

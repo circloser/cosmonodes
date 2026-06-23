@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import type { GraphData, GraphLink, GraphNode } from '../domain/types'
 import { COLORS, nodeStyle } from '../lib/colors'
+import { clusterForce } from '../lib/clusterForce'
 
 type FGNode = GraphNode & { x?: number; y?: number }
 type FGLink = Omit<GraphLink, 'source' | 'target'> & {
@@ -10,7 +11,10 @@ type FGLink = Omit<GraphLink, 'source' | 'target'> & {
 }
 
 interface ForceGraphHandle {
-  d3Force: (name: string) => { distance?: (d: number) => unknown; strength?: (s: number) => unknown } | undefined
+  d3Force: (
+    name: string,
+    force?: unknown,
+  ) => { distance?: (d: number) => unknown; strength?: (s: number) => unknown } | undefined
   zoomToFit: (ms?: number, padding?: number) => void
 }
 
@@ -19,6 +23,8 @@ interface Props {
   onSelect: (node: GraphNode) => void
   /** When set (search active), nodes not in this set are dimmed; matches get a ring. */
   highlightIds?: Set<string> | null
+  /** Nodes needing attention (reminder due) get an amber dot. */
+  attentionIds?: Set<string> | null
 }
 
 /** Signature so we only rebuild (and restart the simulation) on real changes. */
@@ -30,7 +36,7 @@ function signature(g: GraphData): string {
   )
 }
 
-export default function GraphView({ graph, onSelect, highlightIds }: Props) {
+export default function GraphView({ graph, onSelect, highlightIds, attentionIds }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fgRef = useRef<ForceGraphHandle | null>(null)
   const [size, setSize] = useState({ w: 800, h: 600 })
@@ -63,6 +69,8 @@ export default function GraphView({ graph, onSelect, highlightIds }: Props) {
     if (!fg) return
     fg.d3Force('link')?.distance?.(70)
     fg.d3Force('charge')?.strength?.(-120)
+    // group clustering — pull same-group stars together
+    fg.d3Force('cluster', clusterForce(0.14))
     const t = setTimeout(() => fg.zoomToFit(600, 80), 400)
     return () => clearTimeout(t)
   }, [sig])
@@ -92,7 +100,12 @@ export default function GraphView({ graph, onSelect, highlightIds }: Props) {
               ? 'rgba(56,189,248,0.65)'
               : 'rgba(129,140,248,0.4)'
         }
-        linkWidth={(l: object) => ((l as FGLink).strength === 'verified' ? 1.4 : 0.7)}
+        linkWidth={(l: object) => {
+          const link = l as FGLink
+          if (link.faint) return 0.5
+          const c = link.closeness ?? 3
+          return 0.6 + c * 0.45 // closeness 1→1.05, 5→2.85
+        }}
         linkLineDash={(l: object) => ((l as FGLink).faint || (l as FGLink).strength === 'pending' ? [3, 4] : null)}
         nodeCanvasObject={(n: object, ctx: CanvasRenderingContext2D, scale: number) => {
           const node = n as FGNode
@@ -124,6 +137,18 @@ export default function GraphView({ graph, onSelect, highlightIds }: Props) {
             ctx.stroke()
           }
           ctx.restore()
+
+          // attention marker (reminder due) — amber dot
+          if (attentionIds && !dim && node.degree !== 0 && attentionIds.has(node.id)) {
+            ctx.save()
+            ctx.fillStyle = '#FBBF24'
+            ctx.shadowColor = '#FBBF24'
+            ctx.shadowBlur = 6
+            ctx.beginPath()
+            ctx.arc(node.x + s.radius * 0.8, node.y - s.radius * 0.8, Math.max(1.6, s.radius * 0.45), 0, Math.PI * 2)
+            ctx.fill()
+            ctx.restore()
+          }
 
           if (s.showLabel && scale > 0.6) {
             ctx.save()

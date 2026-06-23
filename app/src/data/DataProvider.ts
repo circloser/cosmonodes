@@ -6,6 +6,7 @@ import type {
   IntroRequest,
   LinkStrength,
   MatchRecord,
+  NodePatch,
   NodeRecord,
   Profile,
 } from '../domain/types'
@@ -27,10 +28,13 @@ export interface DataProvider {
 
   listGroups(): Promise<Group[]>
   addGroup(name: string, color: string): Promise<Group>
+  updateGroup(id: string, patch: Partial<Pick<Group, 'name' | 'color'>>): Promise<Group>
+  /** Deletes the group; nodes in it fall back to no group. */
+  deleteGroup(id: string): Promise<void>
 
   listNodes(): Promise<NodeRecord[]>
   addNode(input: AddNodeInput): Promise<NodeRecord>
-  updateNode(id: string, patch: Partial<Pick<NodeRecord, 'label' | 'note'>>): Promise<NodeRecord>
+  updateNode(id: string, patch: NodePatch): Promise<NodeRecord>
   deleteNode(id: string): Promise<void>
 
   listEdges(): Promise<EdgeRecord[]>

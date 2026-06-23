@@ -53,12 +53,25 @@ export function makeSeed(): Dataset {
     { id: 'g_acq', name: '지인', color: '#A78BFA' },
   ]
 
-  const seedContacts: Array<{ label: string; note: string; strength: 'verified' | 'pending'; groupId: string }> = [
-    { label: '엄마', note: '가족 · 매주 일요일 통화', strength: 'verified', groupId: 'g_family' },
-    { label: '김서연', note: '대학 동기 · 디자이너', strength: 'verified', groupId: 'g_friend' },
-    { label: '이준호', note: '회사 동료 · 백엔드', strength: 'pending', groupId: 'g_work' },
-    { label: '박지민', note: '동네 친구 · 러닝 메이트', strength: 'verified', groupId: 'g_friend' },
-    { label: '최예나', note: '독서모임에서 만남', strength: 'pending', groupId: 'g_acq' },
+  const D = 86_400_000
+  const now = Date.now()
+  type Seed = {
+    label: string
+    note: string
+    strength: 'verified' | 'pending'
+    groupId: string
+    closeness: number
+    lastDays: number
+    reminderDays: number | null
+    birthday: string | null
+    interests: string
+  }
+  const seedContacts: Seed[] = [
+    { label: '엄마', note: '가족 · 매주 일요일 통화', strength: 'verified', groupId: 'g_family', closeness: 5, lastDays: 2, reminderDays: 5, birthday: '03-15', interests: '가족, 요리' },
+    { label: '김서연', note: '대학 동기 · 디자이너', strength: 'verified', groupId: 'g_friend', closeness: 4, lastDays: 20, reminderDays: -1, birthday: '07-22', interests: '디자인, 전시' },
+    { label: '이준호', note: '회사 동료 · 백엔드', strength: 'pending', groupId: 'g_work', closeness: 3, lastDays: 5, reminderDays: null, birthday: null, interests: '백엔드, 등산' },
+    { label: '박지민', note: '동네 친구 · 러닝 메이트', strength: 'verified', groupId: 'g_friend', closeness: 4, lastDays: 1, reminderDays: 14, birthday: '11-03', interests: '러닝, 커피' },
+    { label: '최예나', note: '독서모임에서 만남', strength: 'pending', groupId: 'g_acq', closeness: 2, lastDays: 40, reminderDays: -3, birthday: null, interests: '독서' },
   ]
 
   const nodes: NodeRecord[] = []
@@ -71,8 +84,13 @@ export function makeSeed(): Dataset {
       label: c.label,
       note: c.note,
       groupId: c.groupId,
+      closeness: c.closeness,
+      lastContactAt: now - c.lastDays * D,
+      nextReminderAt: c.reminderDays === null ? null : now + c.reminderDays * D,
+      birthday: c.birthday,
+      interests: c.interests,
       matchedUserId: null,
-      createdAt: Date.now(),
+      createdAt: now,
     }
     nodes.push(node)
     edges.push({
@@ -102,6 +120,11 @@ export function makeMatchedUserNetwork(ownerId: string, count = 5): { nodes: Nod
       label: pick(base + i + 1),
       note: '비공개 — 타인의 우주', // never exposed via getGraph (degree-2)
       groupId: null,
+      closeness: 3,
+      lastContactAt: null,
+      nextReminderAt: null,
+      birthday: null,
+      interests: '',
       matchedUserId: null,
       createdAt: Date.now(),
     }
@@ -133,6 +156,11 @@ export function makePerfDataset(total = 300): Dataset {
       label: pick(i),
       note: `더미 연결 #${i}`,
       groupId: group.id,
+      closeness: 1 + Math.floor(Math.random() * 5),
+      lastContactAt: Date.now() - Math.floor(Math.random() * 60) * 86_400_000,
+      nextReminderAt: null,
+      birthday: null,
+      interests: '',
       matchedUserId: null,
       createdAt: Date.now(),
     }

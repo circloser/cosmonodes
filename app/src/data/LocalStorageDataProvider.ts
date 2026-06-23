@@ -8,6 +8,7 @@ import type {
   IntroRequest,
   LinkStrength,
   MatchRecord,
+  NodePatch,
   NodeRecord,
   Profile,
 } from '../domain/types'
@@ -43,8 +44,16 @@ export class LocalStorageDataProvider implements DataProvider {
       if (raw) {
         try {
           const parsed = JSON.parse(raw) as Dataset
-          // migrate datasets persisted before groups existed
+          // migrate datasets persisted before groups / relationship fields existed
           if (!parsed.groups) parsed.groups = makeSeed().groups
+          for (const n of parsed.nodes) {
+            if (n.groupId === undefined) n.groupId = null
+            if (n.closeness === undefined) n.closeness = 3
+            if (n.lastContactAt === undefined) n.lastContactAt = null
+            if (n.nextReminderAt === undefined) n.nextReminderAt = null
+            if (n.birthday === undefined) n.birthday = null
+            if (n.interests === undefined) n.interests = ''
+          }
           return parsed
         } catch {
           /* fall through to fresh seed */
@@ -86,6 +95,24 @@ export class LocalStorageDataProvider implements DataProvider {
     return { ...group }
   }
 
+  async updateGroup(id: string, patch: Partial<Pick<Group, 'name' | 'color'>>): Promise<Group> {
+    const group = this.data.groups.find((g) => g.id === id)
+    if (!group) throw new Error('group not found')
+    if (patch.name !== undefined) group.name = patch.name.trim() || group.name
+    if (patch.color !== undefined) group.color = patch.color
+    this.persist()
+    return { ...group }
+  }
+
+  async deleteGroup(id: string): Promise<void> {
+    this.data.groups = this.data.groups.filter((g) => g.id !== id)
+    // nodes that belonged to the group lose their grouping
+    for (const n of this.data.nodes) {
+      if (n.groupId === id) n.groupId = null
+    }
+    this.persist()
+  }
+
   // ---- nodes ----
   async listNodes(): Promise<NodeRecord[]> {
     return this.data.nodes.filter((n) => n.ownerId === ME).map((n) => ({ ...n }))
@@ -98,6 +125,11 @@ export class LocalStorageDataProvider implements DataProvider {
       label: input.label.trim() || '이름 없는 별',
       note: input.note.trim(),
       groupId: input.groupId ?? null,
+      closeness: 3,
+      lastContactAt: null,
+      nextReminderAt: null,
+      birthday: null,
+      interests: '',
       matchedUserId: null,
       createdAt: Date.now(),
     }
@@ -113,11 +145,17 @@ export class LocalStorageDataProvider implements DataProvider {
     return { ...node }
   }
 
-  async updateNode(id: string, patch: Partial<Pick<NodeRecord, 'label' | 'note'>>): Promise<NodeRecord> {
+  async updateNode(id: string, patch: NodePatch): Promise<NodeRecord> {
     const node = this.data.nodes.find((n) => n.id === id && n.ownerId === ME)
     if (!node) throw new Error('node not found')
     if (patch.label !== undefined) node.label = patch.label
     if (patch.note !== undefined) node.note = patch.note
+    if (patch.groupId !== undefined) node.groupId = patch.groupId
+    if (patch.closeness !== undefined) node.closeness = patch.closeness
+    if (patch.lastContactAt !== undefined) node.lastContactAt = patch.lastContactAt
+    if (patch.nextReminderAt !== undefined) node.nextReminderAt = patch.nextReminderAt
+    if (patch.birthday !== undefined) node.birthday = patch.birthday
+    if (patch.interests !== undefined) node.interests = patch.interests
     this.persist()
     return { ...node }
   }
@@ -258,13 +296,18 @@ export class LocalStorageDataProvider implements DataProvider {
       })
     }
 
-    const links: GraphLink[] = myEdges.map((e) => ({
-      id: e.id,
-      source: e.fromNodeId,
-      target: e.toNodeId,
-      strength: e.strength,
-      faint: false,
-    }))
+    const closenessById = new Map(myNodes.map((n) => [n.id, n.closeness]))
+    const links: GraphLink[] = myEdges.map((e) => {
+      const contactId = e.fromNodeId === SELF_NODE ? e.toNodeId : e.fromNodeId
+      return {
+        id: e.id,
+        source: e.fromNodeId,
+        target: e.toNodeId,
+        strength: e.strength,
+        faint: false,
+        closeness: closenessById.get(contactId),
+      }
+    })
 
     // degree-2: matched contacts' 1st-degree networks, LABEL ONLY (no note).
     const seenFar = new Set<string>()

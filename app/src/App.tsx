@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { GraphNode } from './domain/types'
 import { useGraphStore } from './store/useGraphStore'
 import { filterGraphByGroups } from './lib/graphFilter'
+import { reminderState } from './lib/datetime'
 import CosmicBackground from './components/CosmicBackground'
 import GraphView from './components/GraphView'
 import NodeCard from './components/NodeCard'
@@ -54,13 +55,29 @@ export default function App() {
     return ids
   }, [searchQuery, visibleGraph, groups])
 
+  // reminder-due contacts → amber attention dots + side count
+  const attentionIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const n of nodes) {
+      if (reminderState(n.nextReminderAt)?.due) ids.add(n.id)
+    }
+    return ids
+  }, [nodes])
+
   const matchedCount = matches.filter((m) => m.status === 'accepted').length
 
   return (
     <div className="relative h-full w-full overflow-hidden">
       <CosmicBackground />
 
-      {!loading && <GraphView graph={visibleGraph} onSelect={(n) => setSelected(n)} highlightIds={highlightIds} />}
+      {!loading && (
+        <GraphView
+          graph={visibleGraph}
+          onSelect={(n) => setSelected(n)}
+          highlightIds={highlightIds}
+          attentionIds={attentionIds}
+        />
+      )}
 
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -72,6 +89,7 @@ export default function App() {
         profileName={profile?.displayName ?? '나'}
         starCount={nodes.length}
         matchedCount={matchedCount}
+        reminderCount={attentionIds.size}
         perfMode={perfMode}
         onAddStar={() => setShowAdd(true)}
         onQuickAdd={() => setShowQuickAdd(true)}
@@ -88,7 +106,7 @@ export default function App() {
 
       {selected && (
         <div className="fixed right-5 top-20 z-[70] lg:right-10">
-          <NodeCard node={selected} onClose={() => setSelected(null)} />
+          <NodeCard key={selected.id} node={selected} onClose={() => setSelected(null)} />
         </div>
       )}
 

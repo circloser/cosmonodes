@@ -101,4 +101,48 @@ describe('groups', () => {
     // self node (degree 0) is never removed
     expect(filtered.nodes.some((n) => n.degree === 0)).toBe(true)
   })
+
+  it('updateGroup renames/recolors; deleteGroup drops it and ungroups its nodes', async () => {
+    const groups = await provider.listGroups()
+    const g = groups[0]
+    await provider.updateGroup(g.id, { name: '베프', color: '#22D3EE' })
+    expect((await provider.listGroups()).find((x) => x.id === g.id)?.name).toBe('베프')
+
+    await provider.deleteGroup(g.id)
+    expect((await provider.listGroups()).some((x) => x.id === g.id)).toBe(false)
+    const nodes = await provider.listNodes()
+    expect(nodes.every((n) => n.groupId !== g.id)).toBe(true)
+  })
+})
+
+describe('relationship intelligence', () => {
+  let provider: LocalStorageDataProvider
+
+  beforeEach(() => {
+    provider = freshProvider()
+  })
+
+  it('updateNode persists closeness, last-contact, reminder, birthday, interests', async () => {
+    const id = (await provider.listNodes())[0].id
+    const ts = 1_700_000_000_000
+    await provider.updateNode(id, {
+      closeness: 5,
+      lastContactAt: ts,
+      nextReminderAt: ts + 1000,
+      birthday: '03-15',
+      interests: '러닝, 커피',
+    })
+    const node = (await provider.listNodes()).find((n) => n.id === id)
+    expect(node?.closeness).toBe(5)
+    expect(node?.lastContactAt).toBe(ts)
+    expect(node?.birthday).toBe('03-15')
+    expect(node?.interests).toBe('러닝, 커피')
+  })
+
+  it('getGraph exposes per-link closeness for owned contacts', async () => {
+    const graph = await provider.getGraph()
+    const ownedLinks = graph.links.filter((l) => !l.faint)
+    expect(ownedLinks.length).toBeGreaterThan(0)
+    expect(ownedLinks.every((l) => typeof l.closeness === 'number')).toBe(true)
+  })
 })
