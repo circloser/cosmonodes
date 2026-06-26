@@ -21,6 +21,7 @@ interface ForceGraphHandle {
       }
     | undefined
   zoomToFit: (ms?: number, padding?: number) => void
+  graph2ScreenCoords: (x: number, y: number) => { x: number; y: number }
 }
 
 /** Deterministic 0..1 hash of a string (stable per-link variation, no jitter). */
@@ -76,7 +77,7 @@ function radialRingForce(strength: number) {
 
 interface Props {
   graph: GraphData
-  onSelect: (node: GraphNode) => void
+  onSelect: (node: GraphNode, screenPos?: { x: number; y: number } | null) => void
   /** When set (search active), nodes not in this set are dimmed; matches get a ring. */
   highlightIds?: Set<string> | null
   /** Nodes needing attention (reminder due) get an amber dot. */
@@ -157,7 +158,19 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds 
           const node = n as FGNode
           return node.degree === 2 ? '한 다리 건너 ✦' : node.label
         }}
-        onNodeClick={(n: object) => onSelect(n as GraphNode)}
+        onNodeClick={(n: object) => {
+          const node = n as FGNode
+          let pos: { x: number; y: number } | null = null
+          try {
+            const fg = fgRef.current
+            if (fg && node.x !== undefined && node.y !== undefined) {
+              pos = fg.graph2ScreenCoords(node.x, node.y)
+            }
+          } catch {
+            pos = null // positioning is best-effort; the card still opens
+          }
+          onSelect(node, pos)
+        }}
         onNodeDragEnd={(n: object) => {
           const node = n as FGNode
           // keep the center pinned at origin; pin other stars where dropped

@@ -29,6 +29,7 @@ export default function App() {
     togglePerfMode,
   } = useGraphStore()
   const [selected, setSelected] = useState<GraphNode | null>(null)
+  const [selectedPos, setSelectedPos] = useState<{ x: number; y: number } | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
@@ -73,9 +74,12 @@ export default function App() {
       {!loading && (
         <GraphView
           graph={visibleGraph}
-          onSelect={(n) => setSelected(n)}
           highlightIds={highlightIds}
           attentionIds={attentionIds}
+          onSelect={(n, pos) => {
+            setSelected(n)
+            setSelectedPos(pos ?? null)
+          }}
         />
       )}
 
@@ -105,8 +109,25 @@ export default function App() {
       )}
 
       {selected && (
-        <div className="fixed right-5 top-20 z-[70] lg:right-10">
-          <NodeCard key={selected.id} node={selected} onClose={() => setSelected(null)} />
+        <div
+          className="fixed z-[70]"
+          style={
+            selectedPos
+              ? {
+                  left: Math.min(Math.max(8, selectedPos.x + 18), window.innerWidth - 296),
+                  top: Math.min(Math.max(64, selectedPos.y - 30), window.innerHeight - 120),
+                }
+              : { right: 20, top: 80 }
+          }
+        >
+          <NodeCard
+            key={selected.id}
+            node={selected}
+            onClose={() => {
+              setSelected(null)
+              setSelectedPos(null)
+            }}
+          />
         </div>
       )}
 
