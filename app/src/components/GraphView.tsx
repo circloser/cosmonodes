@@ -4,7 +4,7 @@ import type { GraphData, GraphLink, GraphNode } from '../domain/types'
 import { COLORS, nodeStyle } from '../lib/colors'
 import { clusterForce } from '../lib/clusterForce'
 
-type FGNode = GraphNode & { x?: number; y?: number }
+type FGNode = GraphNode & { x?: number; y?: number; fx?: number; fy?: number }
 type FGLink = Omit<GraphLink, 'source' | 'target'> & {
   source: string | FGNode
   target: string | FGNode
@@ -14,8 +14,31 @@ interface ForceGraphHandle {
   d3Force: (
     name: string,
     force?: unknown,
-  ) => { distance?: (d: number) => unknown; strength?: (s: number) => unknown } | undefined
+  ) =>
+    | {
+        distance?: (d: number | ((link: FGLink) => number)) => unknown
+        strength?: (s: number | ((link: FGLink) => number)) => unknown
+      }
+    | undefined
   zoomToFit: (ms?: number, padding?: number) => void
+}
+
+/** Deterministic 0..1 hash of a string (stable per-link variation, no jitter). */
+function hash01(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return ((h >>> 0) % 1000) / 1000
+}
+
+/** Varied, intimacy-aware spring length: closer contacts sit nearer. */
+function linkDistance(link: FGLink): number {
+  if (link.faint) return 150
+  const c = link.closeness ?? 3
+  const variation = (hash01(link.id) - 0.5) * 26 // ±13
+  return 95 - c * 11 + variation // c=1 → ~84, c=5 → ~40 (± variation)
 }
 
 interface Props {
@@ -67,10 +90,12 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds 
   useEffect(() => {
     const fg = fgRef.current
     if (!fg) return
-    fg.d3Force('link')?.distance?.(70)
-    fg.d3Force('charge')?.strength?.(-120)
-    // group clustering — pull same-group stars together
-    fg.d3Force('cluster', clusterForce(0.14))
+    // varied, springy links (looser strength = softer, smoother motion)
+    fg.d3Force('link')?.distance?.(linkDistance)
+    fg.d3Force('link')?.strength?.(0.35)
+    fg.d3Force('charge')?.strength?.(-95)
+    // very gentle group affinity — a hint of togetherness, not segregation
+    fg.d3Force('cluster', clusterForce(0.03))
     const t = setTimeout(() => fg.zoomToFit(600, 80), 400)
     return () => clearTimeout(t)
   }, [sig])
@@ -86,13 +111,21 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds 
         nodeId="id"
         nodeRelSize={1}
         enableNodeDrag
-        cooldownTicks={120}
-        d3VelocityDecay={0.28}
+        cooldownTicks={220}
+        warmupTicks={20}
+        d3VelocityDecay={0.2}
+        d3AlphaDecay={0.0145}
         nodeLabel={(n: object) => {
           const node = n as FGNode
           return node.degree === 2 ? '한 다리 건너 ✦' : node.label
         }}
         onNodeClick={(n: object) => onSelect(n as GraphNode)}
+        onNodeDragEnd={(n: object) => {
+          // pin the star where it was dropped so it stays put
+          const node = n as FGNode
+          node.fx = node.x
+          node.fy = node.y
+        }}
         linkColor={(l: object) =>
           (l as FGLink).faint
             ? 'rgba(129,140,248,0.18)'
