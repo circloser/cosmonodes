@@ -292,6 +292,7 @@ export class LocalStorageDataProvider implements DataProvider {
         matched: n.matchedUserId !== null,
         groupId: n.groupId,
         color: n.groupId ? groupColor.get(n.groupId) : undefined,
+        closeness: n.closeness,
         note: n.note,
       })
     }

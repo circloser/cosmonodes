@@ -94,6 +94,8 @@ export interface GraphNode {
   groupId?: string | null
   /** Resolved group color for degree-1 nodes, if grouped. */
   color?: string
+  /** Intimacy 1-5 for degree-1 nodes → radial distance tier from center. */
+  closeness?: number
   /** Present ONLY for nodes owned by the requesting user (degree 0 and 1). */
   note?: string
 }

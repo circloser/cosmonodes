@@ -33,12 +33,45 @@ function hash01(s: string): number {
   return ((h >>> 0) % 1000) / 1000
 }
 
-/** Varied, intimacy-aware spring length: closer contacts sit nearer. */
+/** Link rest length — short & varied; the radial force governs distance-from-center. */
 function linkDistance(link: FGLink): number {
-  if (link.faint) return 150
-  const c = link.closeness ?? 3
-  const variation = (hash01(link.id) - 0.5) * 26 // ±13
-  return 95 - c * 11 + variation // c=1 → ~84, c=5 → ~40 (± variation)
+  if (link.faint) return 60 // 2-hop far stars sit just outside their matched parent
+  return 36 + hash01(link.id) * 26 // 36-62, organic variation
+}
+
+/**
+ * 5 closeness tiers → concentric distance rings from the center (자기 노드).
+ * Closeness 5 = innermost (closest), 1 = outermost. Applies across all groups.
+ */
+type RadialNode = { degree: number; closeness?: number; x?: number; y?: number; vx?: number; vy?: number }
+const RING_RADIUS: Record<number, number> = { 5: 70, 4: 120, 3: 175, 2: 235, 1: 300 }
+
+function ringRadius(node: RadialNode): number {
+  const c = Math.min(5, Math.max(1, Math.round(node.closeness ?? 3)))
+  return RING_RADIUS[c]
+}
+
+/** Custom d3 force pulling each degree-1 star onto its closeness ring around self. */
+function radialRingForce(strength: number) {
+  let nodes: RadialNode[] = []
+  function force(alpha: number) {
+    const self = nodes.find((n) => n.degree === 0)
+    const cx = self?.x ?? 0
+    const cy = self?.y ?? 0
+    for (const n of nodes) {
+      if (n.degree !== 1 || n.x === undefined || n.y === undefined) continue
+      const dx = n.x - cx
+      const dy = n.y - cy
+      const dist = Math.hypot(dx, dy) || 1e-6
+      const k = ((ringRadius(n) - dist) / dist) * strength * alpha
+      n.vx = (n.vx ?? 0) + dx * k
+      n.vy = (n.vy ?? 0) + dy * k
+    }
+  }
+  force.initialize = (n: RadialNode[]) => {
+    nodes = n
+  }
+  return force
 }
 
 interface Props {
@@ -66,14 +99,17 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds 
 
   const sig = signature(graph)
   // Clone into mutable objects the force engine can annotate with x/y/vx/vy.
-  const data = useMemo(
-    () => ({
-      nodes: graph.nodes.map((n) => ({ ...n })) as FGNode[],
-      links: graph.links.map((l) => ({ ...l })) as FGLink[],
-    }),
+  const data = useMemo(() => {
+    const nodes = graph.nodes.map((n) => ({ ...n })) as FGNode[]
+    // pin the center (self) at the origin so closeness rings stay centered on me
+    const self = nodes.find((n) => n.degree === 0)
+    if (self) {
+      self.fx = 0
+      self.fy = 0
+    }
+    return { nodes, links: graph.links.map((l) => ({ ...l })) as FGLink[] }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sig],
-  )
+  }, [sig])
 
   useEffect(() => {
     const el = containerRef.current
@@ -90,13 +126,15 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds 
   useEffect(() => {
     const fg = fgRef.current
     if (!fg) return
-    // varied, springy links (looser strength = softer, smoother motion)
+    // soft springy links — radial force governs distance-from-center, so keep links gentle
     fg.d3Force('link')?.distance?.(linkDistance)
-    fg.d3Force('link')?.strength?.(0.35)
-    fg.d3Force('charge')?.strength?.(-95)
+    fg.d3Force('link')?.strength?.(0.12)
+    fg.d3Force('charge')?.strength?.(-80)
+    // closeness → 5 concentric distance rings around me (common to all groups)
+    fg.d3Force('radial', radialRingForce(0.55))
     // very gentle group affinity — a hint of togetherness, not segregation
     fg.d3Force('cluster', clusterForce(0.03))
-    const t = setTimeout(() => fg.zoomToFit(600, 80), 400)
+    const t = setTimeout(() => fg.zoomToFit(600, 80), 500)
     return () => clearTimeout(t)
   }, [sig])
 
@@ -121,10 +159,27 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds 
         }}
         onNodeClick={(n: object) => onSelect(n as GraphNode)}
         onNodeDragEnd={(n: object) => {
-          // pin the star where it was dropped so it stays put
           const node = n as FGNode
+          // keep the center pinned at origin; pin other stars where dropped
+          if (node.degree === 0) {
+            node.fx = 0
+            node.fy = 0
+            return
+          }
           node.fx = node.x
           node.fy = node.y
+        }}
+        onRenderFramePre={(ctx: CanvasRenderingContext2D, scale: number) => {
+          // faint concentric guides for the 5 closeness tiers
+          ctx.save()
+          ctx.strokeStyle = 'rgba(255,255,255,0.05)'
+          ctx.lineWidth = 0.7 / scale
+          for (const r of Object.values(RING_RADIUS)) {
+            ctx.beginPath()
+            ctx.arc(0, 0, r, 0, Math.PI * 2)
+            ctx.stroke()
+          }
+          ctx.restore()
         }}
         linkColor={(l: object) =>
           (l as FGLink).faint
