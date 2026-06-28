@@ -49,6 +49,8 @@ export class LocalStorageDataProvider implements DataProvider {
           for (const n of parsed.nodes) {
             if (n.groupId === undefined) n.groupId = null
             if (n.closeness === undefined) n.closeness = 3
+            if (n.tier === undefined) n.tier = 0
+            if (n.age === undefined) n.age = null
             if (n.lastContactAt === undefined) n.lastContactAt = null
             if (n.nextReminderAt === undefined) n.nextReminderAt = null
             if (n.birthday === undefined) n.birthday = null
@@ -126,6 +128,8 @@ export class LocalStorageDataProvider implements DataProvider {
       note: input.note.trim(),
       groupId: input.groupId ?? null,
       closeness: 3,
+      tier: 0,
+      age: null,
       lastContactAt: null,
       nextReminderAt: null,
       birthday: null,
@@ -152,6 +156,8 @@ export class LocalStorageDataProvider implements DataProvider {
     if (patch.note !== undefined) node.note = patch.note
     if (patch.groupId !== undefined) node.groupId = patch.groupId
     if (patch.closeness !== undefined) node.closeness = patch.closeness
+    if (patch.tier !== undefined) node.tier = patch.tier
+    if (patch.age !== undefined) node.age = patch.age
     if (patch.lastContactAt !== undefined) node.lastContactAt = patch.lastContactAt
     if (patch.nextReminderAt !== undefined) node.nextReminderAt = patch.nextReminderAt
     if (patch.birthday !== undefined) node.birthday = patch.birthday
@@ -293,6 +299,8 @@ export class LocalStorageDataProvider implements DataProvider {
         groupId: n.groupId,
         color: n.groupId ? groupColor.get(n.groupId) : undefined,
         closeness: n.closeness,
+        tier: n.tier,
+        age: n.age,
         note: n.note,
       })
     }

@@ -15,6 +15,8 @@ interface GraphStore {
   groups: Group[]
   hiddenGroupIds: string[]
   searchQuery: string
+  layoutMode: 'cosmos' | 'hierarchy'
+  hierarchySort: 'tier' | 'age' | 'closeness'
   loading: boolean
   perfMode: boolean
   lastSupernovaAt: number
@@ -22,6 +24,8 @@ interface GraphStore {
   load: () => Promise<void>
   refresh: () => Promise<void>
   setSearch: (q: string) => void
+  setLayoutMode: (mode: 'cosmos' | 'hierarchy') => void
+  setHierarchySort: (sort: 'tier' | 'age' | 'closeness') => void
   addStar: (label: string, note: string, groupId: string | null) => Promise<void>
   addStarsBulk: (labels: string[], groupId: string | null) => Promise<number>
   updateNode: (id: string, patch: NodePatch) => Promise<void>
@@ -49,6 +53,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   groups: [],
   hiddenGroupIds: [],
   searchQuery: '',
+  layoutMode: 'cosmos',
+  hierarchySort: 'tier',
   loading: true,
   perfMode: false,
   lastSupernovaAt: 0,
@@ -77,6 +83,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   },
 
   setSearch: (q) => set({ searchQuery: q }),
+  setLayoutMode: (mode) => set({ layoutMode: mode }),
+  setHierarchySort: (sort) => set({ hierarchySort: sort }),
 
   addStar: async (label, note, groupId) => {
     await provider.addNode({ label, note, groupId })

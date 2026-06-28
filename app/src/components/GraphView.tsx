@@ -22,6 +22,7 @@ interface ForceGraphHandle {
     | undefined
   zoomToFit: (ms?: number, padding?: number) => void
   graph2ScreenCoords: (x: number, y: number) => { x: number; y: number }
+  d3ReheatSimulation: () => void
 }
 
 /** Deterministic 0..1 hash of a string (stable per-link variation, no jitter). */
@@ -75,6 +76,52 @@ function radialRingForce(strength: number) {
   return force
 }
 
+/** Vertical span of the hierarchy layout (graph units). */
+const HIER_BAND = 440
+
+type HierNode = { degree: number; tier?: number; age?: number | null; closeness?: number; y?: number; vy?: number }
+type HierSort = 'tier' | 'age' | 'closeness'
+
+/** Rank value used to order stars top→bottom in hierarchy view (higher = top). */
+function rankValue(n: HierNode, sort: HierSort): number | null {
+  if (sort === 'tier') return n.tier ?? 0
+  if (sort === 'closeness') return n.closeness ?? 3
+  return n.age == null ? null : n.age
+}
+
+/** Custom d3 force: pull each star to a vertical band position by its rank. */
+function verticalForce(sort: HierSort, strength: number) {
+  let nodes: HierNode[] = []
+  function force(alpha: number) {
+    let min = Infinity
+    let max = -Infinity
+    for (const n of nodes) {
+      if (n.degree === 2) continue
+      const r = rankValue(n, sort)
+      if (r == null) continue
+      if (r < min) min = r
+      if (r > max) max = r
+    }
+    if (!Number.isFinite(min)) return
+    const range = max - min || 1
+    for (const n of nodes) {
+      if (n.degree === 2 || n.y === undefined) continue
+      const r = rankValue(n, sort)
+      if (r == null) continue
+      const norm = (r - min) / range // 0..1
+      const targetY = (0.5 - norm) * HIER_BAND // high rank → top (negative y)
+      n.vy = (n.vy ?? 0) + (targetY - n.y) * strength * alpha
+    }
+  }
+  force.initialize = (n: HierNode[]) => {
+    nodes = n
+  }
+  return force
+}
+
+const TIER_LABEL = (t: number): string =>
+  t >= 2 ? '조부모' : t === 1 ? '부모' : t === 0 ? '나·동년배' : t === -1 ? '자녀' : '손주'
+
 interface Props {
   graph: GraphData
   onSelect: (node: GraphNode, screenPos?: { x: number; y: number } | null) => void
@@ -82,6 +129,8 @@ interface Props {
   highlightIds?: Set<string> | null
   /** Nodes needing attention (reminder due) get an amber dot. */
   attentionIds?: Set<string> | null
+  layoutMode: 'cosmos' | 'hierarchy'
+  hierarchySort: HierSort
 }
 
 /** Signature so we only rebuild (and restart the simulation) on real changes. */
@@ -93,7 +142,7 @@ function signature(g: GraphData): string {
   )
 }
 
-export default function GraphView({ graph, onSelect, highlightIds, attentionIds }: Props) {
+export default function GraphView({ graph, onSelect, highlightIds, attentionIds, layoutMode, hierarchySort }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fgRef = useRef<ForceGraphHandle | null>(null)
   const [size, setSize] = useState({ w: 800, h: 600 })
@@ -127,17 +176,37 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds 
   useEffect(() => {
     const fg = fgRef.current
     if (!fg) return
-    // soft springy links — radial force governs distance-from-center, so keep links gentle
+    const self = data.nodes.find((n) => n.degree === 0)
     fg.d3Force('link')?.distance?.(linkDistance)
-    fg.d3Force('link')?.strength?.(0.12)
-    fg.d3Force('charge')?.strength?.(-80)
-    // closeness → 5 concentric distance rings around me (common to all groups)
-    fg.d3Force('radial', radialRingForce(0.55))
-    // very gentle group affinity — a hint of togetherness, not segregation
-    fg.d3Force('cluster', clusterForce(0.03))
+
+    if (layoutMode === 'hierarchy') {
+      // vertical layered layout: rank governs y, charge spreads x
+      if (self) {
+        self.fx = 0
+        self.fy = undefined // let the vertical force place me by my rank
+      }
+      fg.d3Force('radial', null)
+      fg.d3Force('cluster', null)
+      fg.d3Force('link')?.strength?.(0.05)
+      fg.d3Force('charge')?.strength?.(-150)
+      fg.d3Force('vertical', verticalForce(hierarchySort, 0.5))
+    } else {
+      // cosmos: closeness rings + gentle group affinity
+      if (self) {
+        self.fx = 0
+        self.fy = 0
+      }
+      fg.d3Force('vertical', null)
+      fg.d3Force('link')?.strength?.(0.12)
+      fg.d3Force('charge')?.strength?.(-80)
+      fg.d3Force('radial', radialRingForce(0.55))
+      fg.d3Force('cluster', clusterForce(0.03))
+    }
+
+    fg.d3ReheatSimulation()
     const t = setTimeout(() => fg.zoomToFit(600, 80), 500)
     return () => clearTimeout(t)
-  }, [sig])
+  }, [sig, layoutMode, hierarchySort, data])
 
   return (
     <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing">
@@ -183,14 +252,56 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds 
           node.fy = node.y
         }}
         onRenderFramePre={(ctx: CanvasRenderingContext2D, scale: number) => {
-          // faint concentric guides for the 5 closeness tiers
           ctx.save()
           ctx.strokeStyle = 'rgba(255,255,255,0.05)'
           ctx.lineWidth = 0.7 / scale
-          for (const r of Object.values(RING_RADIUS)) {
-            ctx.beginPath()
-            ctx.arc(0, 0, r, 0, Math.PI * 2)
-            ctx.stroke()
+          if (layoutMode === 'cosmos') {
+            // concentric guides for the 5 closeness tiers
+            for (const r of Object.values(RING_RADIUS)) {
+              ctx.beginPath()
+              ctx.arc(0, 0, r, 0, Math.PI * 2)
+              ctx.stroke()
+            }
+          } else {
+            // horizontal level guides for the hierarchy
+            const ranks = data.nodes
+              .filter((n) => n.degree !== 2)
+              .map((n) => rankValue(n, hierarchySort))
+              .filter((r): r is number => r != null)
+            if (ranks.length) {
+              const min = Math.min(...ranks)
+              const max = Math.max(...ranks)
+              const range = max - min || 1
+              const half = HIER_BAND / 2 + 30
+              if (hierarchySort === 'tier') {
+                for (let t = Math.floor(min); t <= Math.ceil(max); t++) {
+                  const y = (0.5 - (t - min) / range) * HIER_BAND
+                  ctx.beginPath()
+                  ctx.moveTo(-half, y)
+                  ctx.lineTo(half, y)
+                  ctx.stroke()
+                  ctx.fillStyle = 'rgba(196,199,200,0.45)'
+                  ctx.font = `600 5px "Plus Jakarta Sans", sans-serif`
+                  ctx.textAlign = 'left'
+                  ctx.textBaseline = 'bottom'
+                  ctx.fillText(TIER_LABEL(t), -half + 4, y - 2)
+                }
+              } else {
+                for (let i = 0; i <= 4; i++) {
+                  const y = (0.5 - i / 4) * HIER_BAND
+                  ctx.beginPath()
+                  ctx.moveTo(-half, y)
+                  ctx.lineTo(half, y)
+                  ctx.stroke()
+                }
+                ctx.fillStyle = 'rgba(196,199,200,0.45)'
+                ctx.font = `600 5px "Plus Jakarta Sans", sans-serif`
+                ctx.textAlign = 'left'
+                ctx.textBaseline = 'bottom'
+                ctx.fillText(hierarchySort === 'age' ? '많음 ↑' : '가까움 ↑', -half + 4, -HIER_BAND / 2 - 4)
+                ctx.fillText(hierarchySort === 'age' ? '적음 ↓' : '덜함 ↓', -half + 4, HIER_BAND / 2 + 12)
+              }
+            }
           }
           ctx.restore()
         }}

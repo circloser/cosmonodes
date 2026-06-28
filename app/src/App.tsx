@@ -10,6 +10,7 @@ import AddStarModal from './components/AddStarModal'
 import QuickAddModal from './components/QuickAddModal'
 import ProfilePanel from './components/ProfilePanel'
 import GroupsPanel from './components/GroupsPanel'
+import LayoutControls from './components/LayoutControls'
 import Supernova from './components/Supernova'
 import FpsOverlay from './components/FpsOverlay'
 import AppShell from './components/AppShell'
@@ -25,6 +26,8 @@ export default function App() {
     groups,
     hiddenGroupIds,
     searchQuery,
+    layoutMode,
+    hierarchySort,
     perfMode,
     togglePerfMode,
   } = useGraphStore()
@@ -76,6 +79,8 @@ export default function App() {
           graph={visibleGraph}
           highlightIds={highlightIds}
           attentionIds={attentionIds}
+          layoutMode={layoutMode}
+          hierarchySort={hierarchySort}
           onSelect={(n, pos) => {
             setSelected(n)
             setSelectedPos(pos ?? null)
@@ -102,8 +107,12 @@ export default function App() {
         onTogglePerf={togglePerfMode}
       />
 
+      <div className="fixed left-1/2 top-16 z-[60] -translate-x-1/2">
+        <LayoutControls />
+      </div>
+
       {searchQuery.trim() && highlightIds && (
-        <div className="label-mono fixed left-1/2 top-16 z-[60] -translate-x-1/2 rounded-full bg-deep-void/70 px-4 py-1.5 text-[11px] text-on-surface-variant backdrop-blur">
+        <div className="label-mono fixed left-1/2 top-28 z-[60] -translate-x-1/2 rounded-full bg-deep-void/70 px-4 py-1.5 text-[11px] text-on-surface-variant backdrop-blur">
           “{searchQuery}” · {highlightIds.size}개 일치
         </div>
       )}

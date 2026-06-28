@@ -34,6 +34,9 @@ export interface NodeRecord {
   groupId: string | null
   /** Relationship intelligence (the "management tool" layer). */
   closeness: number // 1-5 intimacy → drives link width & distance
+  /** Generational/hierarchy level: grandparent +2, parent +1, self/sibling 0, child -1, grandchild -2. */
+  tier: number
+  age: number | null
   lastContactAt: number | null
   nextReminderAt: number | null
   birthday: string | null // 'MM-DD' or 'YYYY-MM-DD'
@@ -44,7 +47,10 @@ export interface NodeRecord {
 
 /** Fields the owner can edit on one of their own stars. */
 export type NodePatch = Partial<
-  Pick<NodeRecord, 'label' | 'note' | 'groupId' | 'closeness' | 'lastContactAt' | 'nextReminderAt' | 'birthday' | 'interests'>
+  Pick<
+    NodeRecord,
+    'label' | 'note' | 'groupId' | 'closeness' | 'tier' | 'age' | 'lastContactAt' | 'nextReminderAt' | 'birthday' | 'interests'
+  >
 >
 
 export interface EdgeRecord {
@@ -96,6 +102,10 @@ export interface GraphNode {
   color?: string
   /** Intimacy 1-5 for degree-1 nodes → radial distance tier from center. */
   closeness?: number
+  /** Generational hierarchy level (degree-1) → vertical position in hierarchy view. */
+  tier?: number
+  /** Age (degree-1) → vertical sort option in hierarchy view. */
+  age?: number | null
   /** Present ONLY for nodes owned by the requesting user (degree 0 and 1). */
   note?: string
 }

@@ -127,6 +127,8 @@ describe('relationship intelligence', () => {
     const ts = 1_700_000_000_000
     await provider.updateNode(id, {
       closeness: 5,
+      tier: 1,
+      age: 55,
       lastContactAt: ts,
       nextReminderAt: ts + 1000,
       birthday: '03-15',
@@ -134,9 +136,19 @@ describe('relationship intelligence', () => {
     })
     const node = (await provider.listNodes()).find((n) => n.id === id)
     expect(node?.closeness).toBe(5)
+    expect(node?.tier).toBe(1)
+    expect(node?.age).toBe(55)
     expect(node?.lastContactAt).toBe(ts)
     expect(node?.birthday).toBe('03-15')
     expect(node?.interests).toBe('러닝, 커피')
+  })
+
+  it('seed family has a generational hierarchy (tiers)', async () => {
+    const nodes = await provider.listNodes()
+    const tiers = nodes.map((n) => n.tier)
+    expect(Math.max(...tiers)).toBeGreaterThanOrEqual(2) // 조부모
+    expect(tiers).toContain(1) // 부모
+    expect(nodes.some((n) => n.age != null)).toBe(true)
   })
 
   it('getGraph exposes per-link closeness for owned contacts', async () => {

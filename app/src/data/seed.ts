@@ -61,17 +61,23 @@ export function makeSeed(): Dataset {
     strength: 'verified' | 'pending'
     groupId: string
     closeness: number
+    tier: number
+    age: number | null
     lastDays: number
     reminderDays: number | null
     birthday: string | null
     interests: string
   }
   const seedContacts: Seed[] = [
-    { label: '엄마', note: '가족 · 매주 일요일 통화', strength: 'verified', groupId: 'g_family', closeness: 5, lastDays: 2, reminderDays: 5, birthday: '03-15', interests: '가족, 요리' },
-    { label: '김서연', note: '대학 동기 · 디자이너', strength: 'verified', groupId: 'g_friend', closeness: 4, lastDays: 20, reminderDays: -1, birthday: '07-22', interests: '디자인, 전시' },
-    { label: '이준호', note: '회사 동료 · 백엔드', strength: 'pending', groupId: 'g_work', closeness: 3, lastDays: 5, reminderDays: null, birthday: null, interests: '백엔드, 등산' },
-    { label: '박지민', note: '동네 친구 · 러닝 메이트', strength: 'verified', groupId: 'g_friend', closeness: 4, lastDays: 1, reminderDays: 14, birthday: '11-03', interests: '러닝, 커피' },
-    { label: '최예나', note: '독서모임에서 만남', strength: 'pending', groupId: 'g_acq', closeness: 2, lastDays: 40, reminderDays: -3, birthday: null, interests: '독서' },
+    // 가족 — generational hierarchy (조부모 +2, 부모 +1, 형제 0)
+    { label: '할머니', note: '가족 · 명절마다 방문', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 2, age: 78, lastDays: 10, reminderDays: 3, birthday: '01-09', interests: '가족, 텃밭' },
+    { label: '엄마', note: '가족 · 매주 일요일 통화', strength: 'verified', groupId: 'g_family', closeness: 5, tier: 1, age: 55, lastDays: 2, reminderDays: 5, birthday: '03-15', interests: '가족, 요리' },
+    { label: '아빠', note: '가족 · 주말 등산', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 1, age: 58, lastDays: 6, reminderDays: 12, birthday: '09-02', interests: '등산, 바둑' },
+    { label: '형', note: '형제 · 게임 친구', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 0, age: 30, lastDays: 3, reminderDays: null, birthday: '05-20', interests: '게임, 축구' },
+    { label: '김서연', note: '대학 동기 · 디자이너', strength: 'verified', groupId: 'g_friend', closeness: 4, tier: 0, age: 27, lastDays: 20, reminderDays: -1, birthday: '07-22', interests: '디자인, 전시' },
+    { label: '이준호', note: '회사 동료 · 백엔드', strength: 'pending', groupId: 'g_work', closeness: 3, tier: 0, age: 33, lastDays: 5, reminderDays: null, birthday: null, interests: '백엔드, 등산' },
+    { label: '박지민', note: '동네 친구 · 러닝 메이트', strength: 'verified', groupId: 'g_friend', closeness: 4, tier: 0, age: 29, lastDays: 1, reminderDays: 14, birthday: '11-03', interests: '러닝, 커피' },
+    { label: '최예나', note: '독서모임에서 만남', strength: 'pending', groupId: 'g_acq', closeness: 2, tier: 0, age: 26, lastDays: 40, reminderDays: -3, birthday: null, interests: '독서' },
   ]
 
   const nodes: NodeRecord[] = []
@@ -85,6 +91,8 @@ export function makeSeed(): Dataset {
       note: c.note,
       groupId: c.groupId,
       closeness: c.closeness,
+      tier: c.tier,
+      age: c.age,
       lastContactAt: now - c.lastDays * D,
       nextReminderAt: c.reminderDays === null ? null : now + c.reminderDays * D,
       birthday: c.birthday,
@@ -121,6 +129,8 @@ export function makeMatchedUserNetwork(ownerId: string, count = 5): { nodes: Nod
       note: '비공개 — 타인의 우주', // never exposed via getGraph (degree-2)
       groupId: null,
       closeness: 3,
+      tier: 0,
+      age: null,
       lastContactAt: null,
       nextReminderAt: null,
       birthday: null,
@@ -157,6 +167,8 @@ export function makePerfDataset(total = 300): Dataset {
       note: `더미 연결 #${i}`,
       groupId: group.id,
       closeness: 1 + Math.floor(Math.random() * 5),
+      tier: [-1, 0, 0, 0, 1, 2][Math.floor(Math.random() * 6)],
+      age: 20 + Math.floor(Math.random() * 55),
       lastContactAt: Date.now() - Math.floor(Math.random() * 60) * 86_400_000,
       nextReminderAt: null,
       birthday: null,

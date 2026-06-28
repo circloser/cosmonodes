@@ -8,6 +8,10 @@ interface Props {
   onClose: () => void
 }
 
+function tierLabel(t: number): string {
+  return t >= 2 ? '조부모' : t === 1 ? '부모' : t === 0 ? '동년배' : t === -1 ? '자녀' : '손주'
+}
+
 function ClosenessDots({ value }: { value: number }) {
   return (
     <span className="label-mono tracking-widest text-nebula-blue">
@@ -30,6 +34,8 @@ export default function NodeCard({ node, onClose }: Props) {
   const [label, setLabel] = useState(record?.label ?? node.label)
   const [groupId, setGroupId] = useState<string | null>(record?.groupId ?? null)
   const [closeness, setCloseness] = useState(record?.closeness ?? 3)
+  const [tier, setTier] = useState(record?.tier ?? 0)
+  const [age, setAge] = useState(record?.age != null ? String(record.age) : '')
   const [note, setNote] = useState(record?.note ?? '')
   const [lastContact, setLastContact] = useState(toDateInput(record?.lastContactAt ?? null))
   const [nextReminder, setNextReminder] = useState(toDateInput(record?.nextReminderAt ?? null))
@@ -44,6 +50,8 @@ export default function NodeCard({ node, onClose }: Props) {
       label,
       groupId,
       closeness,
+      tier,
+      age: age.trim() === '' ? null : Number(age),
       note,
       lastContactAt: fromDateInput(lastContact),
       nextReminderAt: fromDateInput(nextReminder),
@@ -132,6 +140,18 @@ export default function NodeCard({ node, onClose }: Props) {
               <div className="flex justify-between">
                 <dt className="text-on-surface-variant">생일</dt>
                 <dd className="text-on-surface">🎂 {record.birthday}</dd>
+              </div>
+            )}
+            {record.age != null && (
+              <div className="flex justify-between">
+                <dt className="text-on-surface-variant">나이</dt>
+                <dd className="text-on-surface">{record.age}세</dd>
+              </div>
+            )}
+            {record.tier !== 0 && (
+              <div className="flex justify-between">
+                <dt className="text-on-surface-variant">세대</dt>
+                <dd className="text-on-surface">{tierLabel(record.tier)}</dd>
               </div>
             )}
           </dl>
@@ -226,6 +246,38 @@ export default function NodeCard({ node, onClose }: Props) {
               ))}
             </div>
           </div>
+
+          <div>
+            <span className="label-mono mb-1 block text-[10px] uppercase tracking-wider text-on-surface-variant">세대 (계층 뷰)</span>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { v: 2, l: '조부모' },
+                { v: 1, l: '부모' },
+                { v: 0, l: '동년배' },
+                { v: -1, l: '자녀' },
+                { v: -2, l: '손주' },
+              ].map((o) => (
+                <button
+                  key={o.v}
+                  onClick={() => setTier(o.v)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] ${tier === o.v ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'}`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="label-mono block text-[10px] uppercase tracking-wider text-on-surface-variant">
+            나이
+            <input
+              type="number"
+              className="input-cosmic mt-1"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="예: 29"
+            />
+          </label>
 
           <label className="label-mono block text-[10px] uppercase tracking-wider text-on-surface-variant">
             마지막 연락
