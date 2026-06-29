@@ -5,7 +5,18 @@ export const ME = 'me'
 export const SELF_NODE = 'self'
 
 /** Defaults for the detailed (owner-only) contact fields. */
-export const CONTACT_DEFAULTS = { relation: '', job: '', location: '', phone: '', email: '', howWeMet: '' }
+export const CONTACT_DEFAULTS = {
+  relation: '',
+  job: '',
+  location: '',
+  phone: '',
+  email: '',
+  howWeMet: '',
+  company: '',
+  department: '',
+  role: '',
+  anniversary: '',
+}
 
 /** Distinct, cosmic-friendly colors for groups. */
 export const GROUP_PALETTE = [
@@ -55,10 +66,10 @@ export function makeSeed(): Dataset {
   }
 
   const groups: Group[] = [
-    { id: 'g_family', name: '가족', color: '#F472B6' },
-    { id: 'g_friend', name: '친구', color: '#38BDF8' },
-    { id: 'g_work', name: '직장', color: '#FBBF24' },
-    { id: 'g_acq', name: '지인', color: '#A78BFA' },
+    { id: 'g_family', name: '가족', color: '#F472B6', kind: 'family' },
+    { id: 'g_friend', name: '친구', color: '#38BDF8', kind: 'friend' },
+    { id: 'g_work', name: '직장', color: '#FBBF24', kind: 'work' },
+    { id: 'g_acq', name: '지인', color: '#A78BFA', kind: 'acquaintance' },
   ]
 
   const D = 86_400_000
@@ -158,8 +169,15 @@ export function makeMatchedUserNetwork(ownerId: string, count = 5): { nodes: Nod
 
 /** Six demo groups used to color the performance dataset. */
 export function makePerfGroups(): Group[] {
-  const names = ['가족', '친구', '직장', '동호회', '학교', '비즈니스']
-  return names.map((name, i) => ({ id: `pg_${i}`, name, color: GROUP_PALETTE[i % GROUP_PALETTE.length] }))
+  const defs: Array<{ name: string; kind: Group['kind'] }> = [
+    { name: '가족', kind: 'family' },
+    { name: '친구', kind: 'friend' },
+    { name: '직장', kind: 'work' },
+    { name: '동호회', kind: 'friend' },
+    { name: '학교', kind: 'friend' },
+    { name: '비즈니스', kind: 'work' },
+  ]
+  return defs.map((d, i) => ({ id: `pg_${i}`, name: d.name, color: GROUP_PALETTE[i % GROUP_PALETTE.length], kind: d.kind }))
 }
 
 /** Build a ~N node dataset for the performance gate (US-004), grouped + colored. */

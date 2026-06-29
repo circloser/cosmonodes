@@ -20,11 +20,15 @@ export interface Profile {
   avatarColor: string
 }
 
-/** A user-defined grouping (가족/친구/직장 …) with its own color. */
+/** Category of a group — drives which input fields the contact form shows. */
+export type GroupKind = 'family' | 'friend' | 'work' | 'acquaintance' | 'general'
+
+/** A user-defined grouping (가족/친구/직장 …) with its own color + category. */
 export interface Group {
   id: string
   name: string
   color: string
+  kind: GroupKind
 }
 
 /**
@@ -49,6 +53,11 @@ export interface NodeRecord {
   phone: string
   email: string
   howWeMet: string
+  // category-specific
+  company: string // 직장
+  department: string // 직장
+  role: string // 직장 직책
+  anniversary: string // 가족/친구 기념일 (MM-DD)
   lastContactAt: number | null
   nextReminderAt: number | null
   birthday: string | null // 'MM-DD' or 'YYYY-MM-DD'
@@ -73,6 +82,10 @@ export type NodePatch = Partial<
     | 'phone'
     | 'email'
     | 'howWeMet'
+    | 'company'
+    | 'department'
+    | 'role'
+    | 'anniversary'
     | 'lastContactAt'
     | 'nextReminderAt'
     | 'birthday'

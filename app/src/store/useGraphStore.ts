@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GraphData, Group, MatchRecord, NodePatch, NodeRecord, Profile } from '../domain/types'
+import type { GraphData, Group, GroupKind, MatchRecord, NodePatch, NodeRecord, Profile } from '../domain/types'
 import type { DataProvider } from '../data/DataProvider'
 import { LocalStorageDataProvider } from '../data/LocalStorageDataProvider'
 import { makePerfDataset } from '../data/seed'
@@ -35,8 +35,8 @@ interface GraphStore {
   acceptInvite: (token: string) => Promise<void>
   requestIntro: (farNodeId: string) => Promise<void>
   saveProfile: (patch: Partial<Omit<Profile, 'userId'>>) => Promise<void>
-  addGroup: (name: string, color: string) => Promise<Group>
-  updateGroup: (id: string, patch: Partial<Pick<Group, 'name' | 'color'>>) => Promise<void>
+  addGroup: (name: string, color: string, kind: GroupKind) => Promise<Group>
+  updateGroup: (id: string, patch: Partial<Pick<Group, 'name' | 'color' | 'kind'>>) => Promise<void>
   deleteGroup: (id: string) => Promise<void>
   toggleGroup: (id: string) => void
   togglePerfMode: () => void
@@ -141,8 +141,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     await get().refresh()
   },
 
-  addGroup: async (name, color) => {
-    const group = await provider.addGroup(name, color)
+  addGroup: async (name, color, kind) => {
+    const group = await provider.addGroup(name, color, kind)
     set({ groups: [...get().groups, group] })
     return group
   },

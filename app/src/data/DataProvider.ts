@@ -3,6 +3,7 @@ import type {
   EdgeRecord,
   GraphData,
   Group,
+  GroupKind,
   IntroRequest,
   LinkStrength,
   MatchRecord,
@@ -27,8 +28,8 @@ export interface DataProvider {
   saveProfile(patch: Partial<Omit<Profile, 'userId'>>): Promise<Profile>
 
   listGroups(): Promise<Group[]>
-  addGroup(name: string, color: string): Promise<Group>
-  updateGroup(id: string, patch: Partial<Pick<Group, 'name' | 'color'>>): Promise<Group>
+  addGroup(name: string, color: string, kind: GroupKind): Promise<Group>
+  updateGroup(id: string, patch: Partial<Pick<Group, 'name' | 'color' | 'kind'>>): Promise<Group>
   /** Deletes the group; nodes in it fall back to no group. */
   deleteGroup(id: string): Promise<void>
 

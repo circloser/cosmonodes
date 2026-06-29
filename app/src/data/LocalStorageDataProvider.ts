@@ -5,6 +5,7 @@ import type {
   GraphLink,
   GraphNode,
   Group,
+  GroupKind,
   IntroRequest,
   LinkStrength,
   MatchRecord,
@@ -46,6 +47,9 @@ export class LocalStorageDataProvider implements DataProvider {
           const parsed = JSON.parse(raw) as Dataset
           // migrate datasets persisted before groups / relationship fields existed
           if (!parsed.groups) parsed.groups = makeSeed().groups
+          for (const g of parsed.groups) {
+            if ((g as Partial<Group>).kind === undefined) g.kind = 'general'
+          }
           for (const n of parsed.nodes) {
             if (n.groupId === undefined) n.groupId = null
             if (n.closeness === undefined) n.closeness = 3
@@ -57,6 +61,10 @@ export class LocalStorageDataProvider implements DataProvider {
             if (n.phone === undefined) n.phone = ''
             if (n.email === undefined) n.email = ''
             if (n.howWeMet === undefined) n.howWeMet = ''
+            if (n.company === undefined) n.company = ''
+            if (n.department === undefined) n.department = ''
+            if (n.role === undefined) n.role = ''
+            if (n.anniversary === undefined) n.anniversary = ''
             if (n.lastContactAt === undefined) n.lastContactAt = null
             if (n.nextReminderAt === undefined) n.nextReminderAt = null
             if (n.birthday === undefined) n.birthday = null
@@ -102,18 +110,19 @@ export class LocalStorageDataProvider implements DataProvider {
     return this.data.groups.map((g) => ({ ...g }))
   }
 
-  async addGroup(name: string, color: string): Promise<Group> {
-    const group: Group = { id: uid('group'), name: name.trim() || '새 그룹', color }
+  async addGroup(name: string, color: string, kind: GroupKind): Promise<Group> {
+    const group: Group = { id: uid('group'), name: name.trim() || '새 그룹', color, kind }
     this.data.groups.push(group)
     this.persist()
     return { ...group }
   }
 
-  async updateGroup(id: string, patch: Partial<Pick<Group, 'name' | 'color'>>): Promise<Group> {
+  async updateGroup(id: string, patch: Partial<Pick<Group, 'name' | 'color' | 'kind'>>): Promise<Group> {
     const group = this.data.groups.find((g) => g.id === id)
     if (!group) throw new Error('group not found')
     if (patch.name !== undefined) group.name = patch.name.trim() || group.name
     if (patch.color !== undefined) group.color = patch.color
+    if (patch.kind !== undefined) group.kind = patch.kind
     this.persist()
     return { ...group }
   }
@@ -177,6 +186,10 @@ export class LocalStorageDataProvider implements DataProvider {
     if (patch.phone !== undefined) node.phone = patch.phone
     if (patch.email !== undefined) node.email = patch.email
     if (patch.howWeMet !== undefined) node.howWeMet = patch.howWeMet
+    if (patch.company !== undefined) node.company = patch.company
+    if (patch.department !== undefined) node.department = patch.department
+    if (patch.role !== undefined) node.role = patch.role
+    if (patch.anniversary !== undefined) node.anniversary = patch.anniversary
     if (patch.lastContactAt !== undefined) node.lastContactAt = patch.lastContactAt
     if (patch.nextReminderAt !== undefined) node.nextReminderAt = patch.nextReminderAt
     if (patch.birthday !== undefined) node.birthday = patch.birthday

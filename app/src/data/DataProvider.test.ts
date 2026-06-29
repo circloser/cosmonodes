@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { LocalStorageDataProvider } from './LocalStorageDataProvider'
 import { makeSeed } from './seed'
 import { filterGraphByGroups } from '../lib/graphFilter'
+import { fieldsForKind } from '../lib/kinds'
 
 function freshProvider(): LocalStorageDataProvider {
   // isolated in-memory dataset (no shared localStorage between tests)
@@ -79,8 +80,19 @@ describe('groups', () => {
     expect(colored.length).toBeGreaterThan(0)
   })
 
+  it('seed groups carry categories (kinds) and field config adapts to them', async () => {
+    const groups = await provider.listGroups()
+    expect(groups.find((g) => g.name === '가족')?.kind).toBe('family')
+    expect(groups.find((g) => g.name === '직장')?.kind).toBe('work')
+    // work shows company/department/role; family shows generation tier
+    expect(fieldsForKind('work').company).toBe(true)
+    expect(fieldsForKind('work').tier).toBe(false)
+    expect(fieldsForKind('family').tier).toBe(true)
+    expect(fieldsForKind('family').company).toBe(false)
+  })
+
   it('a new node inherits its group color in the graph projection', async () => {
-    const g = await provider.addGroup('동호회', '#34D399')
+    const g = await provider.addGroup('동호회', '#34D399', 'friend')
     await provider.addNode({ label: '러닝메이트', note: '', groupId: g.id })
     const graph = await provider.getGraph()
     const node = graph.nodes.find((n) => n.label === '러닝메이트')

@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import type { GroupKind } from '../domain/types'
 import { useGraphStore } from '../store/useGraphStore'
 import { GROUP_PALETTE } from '../data/seed'
+import { KIND_OPTIONS } from '../lib/kinds'
 
 interface Props {
   onClose: () => void
@@ -18,6 +20,7 @@ export default function AddStarModal({ onClose }: Props) {
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupColor, setNewGroupColor] = useState(GROUP_PALETTE[0])
+  const [newGroupKind, setNewGroupKind] = useState<GroupKind>('general')
 
   const createGroup = async () => {
     if (!newGroupName.trim()) {
@@ -25,7 +28,7 @@ export default function AddStarModal({ onClose }: Props) {
       return
     }
     setBusy(true)
-    const g = await addGroup(newGroupName, newGroupColor)
+    const g = await addGroup(newGroupName, newGroupColor, newGroupKind)
     setBusy(false)
     setGroupId(g.id)
     setCreatingGroup(false)
@@ -113,6 +116,18 @@ export default function AddStarModal({ onClose }: Props) {
               onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="그룹 이름 (예: 동호회)"
             />
+            <div className="mb-3 flex flex-wrap gap-1">
+              {KIND_OPTIONS.map((k) => (
+                <button
+                  key={k.key}
+                  type="button"
+                  onClick={() => setNewGroupKind(k.key)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] ${newGroupKind === k.key ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'}`}
+                >
+                  {k.label}
+                </button>
+              ))}
+            </div>
             <div className="mb-3 flex flex-wrap gap-2">
               {GROUP_PALETTE.map((c) => (
                 <button
