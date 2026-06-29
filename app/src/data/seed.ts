@@ -4,6 +4,9 @@ import { uid } from '../lib/id'
 export const ME = 'me'
 export const SELF_NODE = 'self'
 
+/** Defaults for the detailed (owner-only) contact fields. */
+export const CONTACT_DEFAULTS = { relation: '', job: '', location: '', phone: '', email: '', howWeMet: '' }
+
 /** Distinct, cosmic-friendly colors for groups. */
 export const GROUP_PALETTE = [
   '#38BDF8', // nebula blue
@@ -41,8 +44,13 @@ export function makeSeed(): Dataset {
   const profile: Profile = {
     userId: ME,
     displayName: '나',
-    bio: '인간관계를 별자리처럼 바라봅니다.',
     oneLine: '오늘도 한 사람의 우주를 추가하는 중 ✦',
+    bio: '인간관계를 별자리처럼 바라봅니다.',
+    job: '',
+    location: '',
+    birthday: '',
+    interests: '',
+    website: '',
     avatarColor: '#ffffff',
   }
 
@@ -63,6 +71,7 @@ export function makeSeed(): Dataset {
     closeness: number
     tier: number
     age: number | null
+    relation: string
     lastDays: number
     reminderDays: number | null
     birthday: string | null
@@ -70,14 +79,14 @@ export function makeSeed(): Dataset {
   }
   const seedContacts: Seed[] = [
     // 가족 — generational hierarchy (조부모 +2, 부모 +1, 형제 0)
-    { label: '할머니', note: '가족 · 명절마다 방문', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 2, age: 78, lastDays: 10, reminderDays: 3, birthday: '01-09', interests: '가족, 텃밭' },
-    { label: '엄마', note: '가족 · 매주 일요일 통화', strength: 'verified', groupId: 'g_family', closeness: 5, tier: 1, age: 55, lastDays: 2, reminderDays: 5, birthday: '03-15', interests: '가족, 요리' },
-    { label: '아빠', note: '가족 · 주말 등산', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 1, age: 58, lastDays: 6, reminderDays: 12, birthday: '09-02', interests: '등산, 바둑' },
-    { label: '형', note: '형제 · 게임 친구', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 0, age: 30, lastDays: 3, reminderDays: null, birthday: '05-20', interests: '게임, 축구' },
-    { label: '김서연', note: '대학 동기 · 디자이너', strength: 'verified', groupId: 'g_friend', closeness: 4, tier: 0, age: 27, lastDays: 20, reminderDays: -1, birthday: '07-22', interests: '디자인, 전시' },
-    { label: '이준호', note: '회사 동료 · 백엔드', strength: 'pending', groupId: 'g_work', closeness: 3, tier: 0, age: 33, lastDays: 5, reminderDays: null, birthday: null, interests: '백엔드, 등산' },
-    { label: '박지민', note: '동네 친구 · 러닝 메이트', strength: 'verified', groupId: 'g_friend', closeness: 4, tier: 0, age: 29, lastDays: 1, reminderDays: 14, birthday: '11-03', interests: '러닝, 커피' },
-    { label: '최예나', note: '독서모임에서 만남', strength: 'pending', groupId: 'g_acq', closeness: 2, tier: 0, age: 26, lastDays: 40, reminderDays: -3, birthday: null, interests: '독서' },
+    { label: '할머니', note: '가족 · 명절마다 방문', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 2, age: 78, relation: '조모', lastDays: 10, reminderDays: 3, birthday: '01-09', interests: '가족, 텃밭' },
+    { label: '엄마', note: '가족 · 매주 일요일 통화', strength: 'verified', groupId: 'g_family', closeness: 5, tier: 1, age: 55, relation: '어머니', lastDays: 2, reminderDays: 5, birthday: '03-15', interests: '가족, 요리' },
+    { label: '아빠', note: '가족 · 주말 등산', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 1, age: 58, relation: '아버지', lastDays: 6, reminderDays: 12, birthday: '09-02', interests: '등산, 바둑' },
+    { label: '형', note: '형제 · 게임 친구', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 0, age: 30, relation: '형', lastDays: 3, reminderDays: null, birthday: '05-20', interests: '게임, 축구' },
+    { label: '김서연', note: '대학 동기 · 디자이너', strength: 'verified', groupId: 'g_friend', closeness: 4, tier: 0, age: 27, relation: '대학 동기', lastDays: 20, reminderDays: -1, birthday: '07-22', interests: '디자인, 전시' },
+    { label: '이준호', note: '회사 동료 · 백엔드', strength: 'pending', groupId: 'g_work', closeness: 3, tier: 0, age: 33, relation: '회사 동료', lastDays: 5, reminderDays: null, birthday: null, interests: '백엔드, 등산' },
+    { label: '박지민', note: '동네 친구 · 러닝 메이트', strength: 'verified', groupId: 'g_friend', closeness: 4, tier: 0, age: 29, relation: '동네 친구', lastDays: 1, reminderDays: 14, birthday: '11-03', interests: '러닝, 커피' },
+    { label: '최예나', note: '독서모임에서 만남', strength: 'pending', groupId: 'g_acq', closeness: 2, tier: 0, age: 26, relation: '독서모임', lastDays: 40, reminderDays: -3, birthday: null, interests: '독서' },
   ]
 
   const nodes: NodeRecord[] = []
@@ -93,6 +102,8 @@ export function makeSeed(): Dataset {
       closeness: c.closeness,
       tier: c.tier,
       age: c.age,
+      ...CONTACT_DEFAULTS,
+      relation: c.relation,
       lastContactAt: now - c.lastDays * D,
       nextReminderAt: c.reminderDays === null ? null : now + c.reminderDays * D,
       birthday: c.birthday,
@@ -131,6 +142,7 @@ export function makeMatchedUserNetwork(ownerId: string, count = 5): { nodes: Nod
       closeness: 3,
       tier: 0,
       age: null,
+      ...CONTACT_DEFAULTS,
       lastContactAt: null,
       nextReminderAt: null,
       birthday: null,
@@ -169,6 +181,7 @@ export function makePerfDataset(total = 300): Dataset {
       closeness: 1 + Math.floor(Math.random() * 5),
       tier: [-1, 0, 0, 0, 1, 2][Math.floor(Math.random() * 6)],
       age: 20 + Math.floor(Math.random() * 55),
+      ...CONTACT_DEFAULTS,
       lastContactAt: Date.now() - Math.floor(Math.random() * 60) * 86_400_000,
       nextReminderAt: null,
       birthday: null,

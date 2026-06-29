@@ -10,8 +10,13 @@ export type NodeDegree = 0 | 1 | 2 // 0 = self, 1 = my contacts, 2 = matched con
 export interface Profile {
   userId: string
   displayName: string
-  bio: string
   oneLine: string
+  bio: string
+  job: string
+  location: string
+  birthday: string
+  interests: string
+  website: string
   avatarColor: string
 }
 
@@ -37,6 +42,13 @@ export interface NodeRecord {
   /** Generational/hierarchy level: grandparent +2, parent +1, self/sibling 0, child -1, grandchild -2. */
   tier: number
   age: number | null
+  // detailed contact fields (owner-only, never exposed to others)
+  relation: string
+  job: string
+  location: string
+  phone: string
+  email: string
+  howWeMet: string
   lastContactAt: number | null
   nextReminderAt: number | null
   birthday: string | null // 'MM-DD' or 'YYYY-MM-DD'
@@ -49,7 +61,22 @@ export interface NodeRecord {
 export type NodePatch = Partial<
   Pick<
     NodeRecord,
-    'label' | 'note' | 'groupId' | 'closeness' | 'tier' | 'age' | 'lastContactAt' | 'nextReminderAt' | 'birthday' | 'interests'
+    | 'label'
+    | 'note'
+    | 'groupId'
+    | 'closeness'
+    | 'tier'
+    | 'age'
+    | 'relation'
+    | 'job'
+    | 'location'
+    | 'phone'
+    | 'email'
+    | 'howWeMet'
+    | 'lastContactAt'
+    | 'nextReminderAt'
+    | 'birthday'
+    | 'interests'
   >
 >
 

@@ -32,7 +32,6 @@ export default function App() {
     togglePerfMode,
   } = useGraphStore()
   const [selected, setSelected] = useState<GraphNode | null>(null)
-  const [selectedPos, setSelectedPos] = useState<{ x: number; y: number } | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
@@ -81,10 +80,7 @@ export default function App() {
           attentionIds={attentionIds}
           layoutMode={layoutMode}
           hierarchySort={hierarchySort}
-          onSelect={(n, pos) => {
-            setSelected(n)
-            setSelectedPos(pos ?? null)
-          }}
+          onSelect={(n) => setSelected(n)}
         />
       )}
 
@@ -118,30 +114,13 @@ export default function App() {
       )}
 
       {selected && (
-        <div
-          className="fixed z-[70]"
-          style={
-            selectedPos
-              ? {
-                  left: Math.min(Math.max(8, selectedPos.x + 18), window.innerWidth - 296),
-                  top: Math.min(Math.max(64, selectedPos.y - 30), window.innerHeight - 120),
-                }
-              : { right: 20, top: 80 }
-          }
-        >
-          <NodeCard
-            key={selected.id}
-            node={selected}
-            onClose={() => {
-              setSelected(null)
-              setSelectedPos(null)
-            }}
-          />
+        <div className="fixed left-4 top-20 z-[70] lg:left-64">
+          <NodeCard key={selected.id} node={selected} onClose={() => setSelected(null)} />
         </div>
       )}
 
       {showGroups && (
-        <div className="fixed left-5 top-20 z-[70] lg:left-64">
+        <div className="fixed right-4 top-20 z-[70]">
           <GroupsPanel onClose={() => setShowGroups(false)} />
         </div>
       )}

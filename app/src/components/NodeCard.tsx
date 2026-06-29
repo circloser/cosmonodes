@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import type { GraphNode } from '../domain/types'
 import { useGraphStore } from '../store/useGraphStore'
 import { fromDateInput, reminderState, sinceLabel, toDateInput } from '../lib/datetime'
@@ -21,6 +22,28 @@ function ClosenessDots({ value }: { value: number }) {
   )
 }
 
+function SectionTitle({ children }: { children: ReactNode }) {
+  return <h5 className="label-mono mb-1 mt-2 text-[10px] uppercase tracking-widest text-nebula-blue/80">{children}</h5>
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="label-mono block text-[10px] uppercase tracking-wider text-on-surface-variant">
+      {label}
+      {children}
+    </label>
+  )
+}
+
+function Row({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="shrink-0 text-on-surface-variant">{label}</dt>
+      <dd className="truncate text-right text-on-surface">{value}</dd>
+    </div>
+  )
+}
+
 export default function NodeCard({ node, onClose }: Props) {
   const { nodes, groups, updateNode, removeNode, invite, acceptInvite, requestIntro } = useGraphStore()
   const record = nodes.find((n) => n.id === node.id)
@@ -30,17 +53,23 @@ export default function NodeCard({ node, onClose }: Props) {
   const [introSent, setIntroSent] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  // edit form state (seeded from record)
+  // edit form state
   const [label, setLabel] = useState(record?.label ?? node.label)
   const [groupId, setGroupId] = useState<string | null>(record?.groupId ?? null)
   const [closeness, setCloseness] = useState(record?.closeness ?? 3)
   const [tier, setTier] = useState(record?.tier ?? 0)
   const [age, setAge] = useState(record?.age != null ? String(record.age) : '')
+  const [relation, setRelation] = useState(record?.relation ?? '')
+  const [job, setJob] = useState(record?.job ?? '')
+  const [location, setLocation] = useState(record?.location ?? '')
+  const [phone, setPhone] = useState(record?.phone ?? '')
+  const [email, setEmail] = useState(record?.email ?? '')
+  const [howWeMet, setHowWeMet] = useState(record?.howWeMet ?? '')
+  const [birthday, setBirthday] = useState(record?.birthday ?? '')
+  const [interests, setInterests] = useState(record?.interests ?? '')
   const [note, setNote] = useState(record?.note ?? '')
   const [lastContact, setLastContact] = useState(toDateInput(record?.lastContactAt ?? null))
   const [nextReminder, setNextReminder] = useState(toDateInput(record?.nextReminderAt ?? null))
-  const [birthday, setBirthday] = useState(record?.birthday ?? '')
-  const [interests, setInterests] = useState(record?.interests ?? '')
 
   const degreeLabel = node.degree === 0 ? '나의 중심' : node.degree === 1 ? '직접 연결' : '한 다리 건너'
 
@@ -52,11 +81,17 @@ export default function NodeCard({ node, onClose }: Props) {
       closeness,
       tier,
       age: age.trim() === '' ? null : Number(age),
+      relation: relation.trim(),
+      job: job.trim(),
+      location: location.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      howWeMet: howWeMet.trim(),
+      birthday: birthday.trim() || null,
+      interests: interests.trim(),
       note,
       lastContactAt: fromDateInput(lastContact),
       nextReminderAt: fromDateInput(nextReminder),
-      birthday: birthday.trim() || null,
-      interests: interests.trim(),
     })
     setBusy(false)
     setEditing(false)
@@ -92,14 +127,22 @@ export default function NodeCard({ node, onClose }: Props) {
   const reminder = reminderState(record?.nextReminderAt ?? null)
   const interestList = (record?.interests ?? '').split(',').map((s) => s.trim()).filter(Boolean)
 
+  const tierOptions = [
+    { v: 2, l: '조부모' },
+    { v: 1, l: '부모' },
+    { v: 0, l: '동년배' },
+    { v: -1, l: '자녀' },
+    { v: -2, l: '손주' },
+  ]
+
   return (
-    <div className="glass-card animate-fade-up max-h-[80vh] w-72 overflow-y-auto rounded-xl p-5 shadow-2xl">
+    <div className="glass-card animate-fade-up max-h-[78vh] w-72 overflow-y-auto rounded-xl p-5 shadow-2xl">
       <div className="mb-3 flex items-start justify-between">
         <span className="label-mono text-[11px] uppercase tracking-wider text-nebula-blue">{degreeLabel}</span>
         <button onClick={onClose} className="text-on-surface-variant hover:text-white" aria-label="닫기">✕</button>
       </div>
 
-      {/* ---- degree 2: faint far star ---- */}
+      {/* ---- degree 2 ---- */}
       {node.degree === 2 && (
         <>
           <h4 className="mb-1 font-display text-2xl font-bold text-starlight-white">{node.label}</h4>
@@ -112,56 +155,44 @@ export default function NodeCard({ node, onClose }: Props) {
         </>
       )}
 
-      {/* ---- degree 0: self ---- */}
+      {/* ---- degree 0 ---- */}
       {node.degree === 0 && <h4 className="font-display text-2xl font-bold text-starlight-white">{node.label}</h4>}
 
-      {/* ---- degree 1: my contact (relationship intelligence) ---- */}
+      {/* ---- degree 1: view ---- */}
       {node.degree === 1 && record && !editing && (
         <>
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <h4 className="font-display text-2xl font-bold text-starlight-white">{record.label}</h4>
             <ClosenessDots value={record.closeness} />
           </div>
+          {(record.relation || record.job || record.location) && (
+            <p className="mb-3 text-sm text-on-surface-variant">
+              {[record.relation, record.job, record.location].filter(Boolean).join(' · ')}
+            </p>
+          )}
 
           {record.note && <p className="mb-3 whitespace-pre-wrap text-sm text-on-surface-variant">{record.note}</p>}
 
           <dl className="mb-3 space-y-1.5 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-on-surface-variant">마지막 연락</dt>
-              <dd className="text-on-surface">{sinceLabel(record.lastContactAt)}</dd>
-            </div>
+            <Row label="마지막 연락" value={sinceLabel(record.lastContactAt)} />
             <div className="flex justify-between">
               <dt className="text-on-surface-variant">다음 연락</dt>
               <dd className={reminder?.overdue ? 'text-error' : reminder?.due ? 'text-amber-300' : 'text-on-surface'}>
                 {reminder ? reminder.label : '없음'}
               </dd>
             </div>
-            {record.birthday && (
-              <div className="flex justify-between">
-                <dt className="text-on-surface-variant">생일</dt>
-                <dd className="text-on-surface">🎂 {record.birthday}</dd>
-              </div>
-            )}
-            {record.age != null && (
-              <div className="flex justify-between">
-                <dt className="text-on-surface-variant">나이</dt>
-                <dd className="text-on-surface">{record.age}세</dd>
-              </div>
-            )}
-            {record.tier !== 0 && (
-              <div className="flex justify-between">
-                <dt className="text-on-surface-variant">세대</dt>
-                <dd className="text-on-surface">{tierLabel(record.tier)}</dd>
-              </div>
-            )}
+            {record.birthday && <Row label="생일" value={`🎂 ${record.birthday}`} />}
+            {record.age != null && <Row label="나이" value={`${record.age}세`} />}
+            {record.tier !== 0 && <Row label="세대" value={tierLabel(record.tier)} />}
+            {record.howWeMet && <Row label="만난 계기" value={record.howWeMet} />}
+            {record.phone && <Row label="전화" value={record.phone} />}
+            {record.email && <Row label="이메일" value={record.email} />}
           </dl>
 
           {interestList.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-1.5">
               {interestList.map((t) => (
-                <span key={t} className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-on-surface-variant">
-                  #{t}
-                </span>
+                <span key={t} className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-on-surface-variant">#{t}</span>
               ))}
             </div>
           )}
@@ -170,7 +201,6 @@ export default function NodeCard({ node, onClose }: Props) {
             ✓ 오늘 연락함
           </button>
 
-          {/* matching */}
           {record.matchedUserId ? (
             <div className="label-mono mb-2 rounded-lg border border-nebula-blue/30 bg-nebula-blue/10 px-3 py-2 text-[11px] text-nebula-blue">
               ✓ 매칭됨 · 인맥이 확장되었습니다
@@ -205,105 +235,60 @@ export default function NodeCard({ node, onClose }: Props) {
         </>
       )}
 
-      {/* ---- degree 1: edit form ---- */}
+      {/* ---- degree 1: edit (sectioned) ---- */}
       {node.degree === 1 && record && editing && (
-        <div className="space-y-3">
-          <input className="input-cosmic" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="이름" />
-
+        <div className="space-y-2.5">
+          <SectionTitle>기본정보</SectionTitle>
+          <Field label="이름"><input className="input-cosmic mt-1" value={label} onChange={(e) => setLabel(e.target.value)} /></Field>
+          <Field label="관계"><input className="input-cosmic mt-1" value={relation} onChange={(e) => setRelation(e.target.value)} placeholder="예: 대학 동기" /></Field>
+          <Field label="직업 / 하는 일"><input className="input-cosmic mt-1" value={job} onChange={(e) => setJob(e.target.value)} placeholder="예: 디자이너" /></Field>
+          <Field label="사는 곳"><input className="input-cosmic mt-1" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="예: 서울 마포" /></Field>
+          <div className="flex gap-2">
+            <div className="flex-1"><Field label="나이"><input type="number" className="input-cosmic mt-1" value={age} onChange={(e) => setAge(e.target.value)} placeholder="29" /></Field></div>
+            <div className="flex-1"><Field label="생일"><input className="input-cosmic mt-1" value={birthday} onChange={(e) => setBirthday(e.target.value)} placeholder="03-15" /></Field></div>
+          </div>
           <div>
-            <span className="label-mono mb-1 block text-[10px] uppercase tracking-wider text-on-surface-variant">그룹</span>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setGroupId(null)}
-                className={`rounded-full border px-2.5 py-1 text-[11px] ${groupId === null ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'}`}
-              >
-                없음
-              </button>
-              {groups.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => setGroupId(g.id)}
-                  className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] ${groupId === g.id ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'}`}
-                >
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: g.color }} />
-                  {g.name}
-                </button>
+            <span className="label-mono mb-1 block text-[10px] uppercase tracking-wider text-on-surface-variant">세대 (계층 뷰)</span>
+            <div className="flex flex-wrap gap-1">
+              {tierOptions.map((o) => (
+                <button key={o.v} onClick={() => setTier(o.v)} className={`rounded-full border px-2.5 py-1 text-[11px] ${tier === o.v ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'}`}>{o.l}</button>
               ))}
             </div>
           </div>
 
+          <SectionTitle>연락처 · 비공개</SectionTitle>
+          <Field label="전화"><input className="input-cosmic mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-…" /></Field>
+          <Field label="이메일"><input className="input-cosmic mt-1" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@…" /></Field>
+
+          <SectionTitle>관계 · 케어</SectionTitle>
           <div>
             <span className="label-mono mb-1 block text-[10px] uppercase tracking-wider text-on-surface-variant">친밀도</span>
             <div className="flex gap-1.5">
               {[1, 2, 3, 4, 5].map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setCloseness(v)}
-                  className={`h-7 flex-1 rounded text-sm transition-colors ${v <= closeness ? 'bg-nebula-blue/30 text-nebula-blue' : 'bg-white/5 text-on-surface-variant'}`}
-                >
-                  {v}
-                </button>
+                <button key={v} onClick={() => setCloseness(v)} className={`h-7 flex-1 rounded text-sm transition-colors ${v <= closeness ? 'bg-nebula-blue/30 text-nebula-blue' : 'bg-white/5 text-on-surface-variant'}`}>{v}</button>
               ))}
             </div>
           </div>
-
           <div>
-            <span className="label-mono mb-1 block text-[10px] uppercase tracking-wider text-on-surface-variant">세대 (계층 뷰)</span>
+            <span className="label-mono mb-1 block text-[10px] uppercase tracking-wider text-on-surface-variant">그룹</span>
             <div className="flex flex-wrap gap-1">
-              {[
-                { v: 2, l: '조부모' },
-                { v: 1, l: '부모' },
-                { v: 0, l: '동년배' },
-                { v: -1, l: '자녀' },
-                { v: -2, l: '손주' },
-              ].map((o) => (
-                <button
-                  key={o.v}
-                  onClick={() => setTier(o.v)}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] ${tier === o.v ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'}`}
-                >
-                  {o.l}
+              <button onClick={() => setGroupId(null)} className={`rounded-full border px-2.5 py-1 text-[11px] ${groupId === null ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'}`}>없음</button>
+              {groups.map((g) => (
+                <button key={g.id} onClick={() => setGroupId(g.id)} className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] ${groupId === g.id ? 'border-white/60 text-white' : 'border-white/15 text-on-surface-variant'}`}>
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: g.color }} />{g.name}
                 </button>
               ))}
             </div>
           </div>
+          <Field label="마지막 연락"><input type="date" className="input-cosmic mt-1" value={lastContact} onChange={(e) => setLastContact(e.target.value)} /></Field>
+          <Field label="다음 연락 리마인더"><input type="date" className="input-cosmic mt-1" value={nextReminder} onChange={(e) => setNextReminder(e.target.value)} /></Field>
+          <Field label="만난 계기"><input className="input-cosmic mt-1" value={howWeMet} onChange={(e) => setHowWeMet(e.target.value)} placeholder="예: 2022 사내 해커톤" /></Field>
 
-          <label className="label-mono block text-[10px] uppercase tracking-wider text-on-surface-variant">
-            나이
-            <input
-              type="number"
-              className="input-cosmic mt-1"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              placeholder="예: 29"
-            />
-          </label>
+          <SectionTitle>관심사 · 메모</SectionTitle>
+          <Field label="관심사 (쉼표로 구분)"><input className="input-cosmic mt-1" value={interests} onChange={(e) => setInterests(e.target.value)} placeholder="러닝, 커피" /></Field>
+          <textarea className="input-cosmic min-h-[56px] resize-none" value={note} onChange={(e) => setNote(e.target.value)} placeholder="메모 (비공개)" />
 
-          <label className="label-mono block text-[10px] uppercase tracking-wider text-on-surface-variant">
-            마지막 연락
-            <input type="date" className="input-cosmic mt-1" value={lastContact} onChange={(e) => setLastContact(e.target.value)} />
-          </label>
-          <label className="label-mono block text-[10px] uppercase tracking-wider text-on-surface-variant">
-            다음 연락 리마인더
-            <input type="date" className="input-cosmic mt-1" value={nextReminder} onChange={(e) => setNextReminder(e.target.value)} />
-          </label>
-          <label className="label-mono block text-[10px] uppercase tracking-wider text-on-surface-variant">
-            생일 (MM-DD)
-            <input className="input-cosmic mt-1" value={birthday} onChange={(e) => setBirthday(e.target.value)} placeholder="예: 03-15" />
-          </label>
-          <label className="label-mono block text-[10px] uppercase tracking-wider text-on-surface-variant">
-            관심사 (쉼표로 구분)
-            <input className="input-cosmic mt-1" value={interests} onChange={(e) => setInterests(e.target.value)} placeholder="예: 러닝, 커피" />
-          </label>
-
-          <textarea
-            className="input-cosmic min-h-[56px] resize-none"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="메모 (비공개)"
-          />
-
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-1">
             <button disabled={busy} onClick={save} className="btn-star flex-1 py-2 text-sm">저장</button>
             <button onClick={() => setEditing(false)} className="btn-ghost flex-1 py-2 text-sm">취소</button>
           </div>

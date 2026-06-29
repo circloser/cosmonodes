@@ -129,6 +129,10 @@ describe('relationship intelligence', () => {
       closeness: 5,
       tier: 1,
       age: 55,
+      relation: '대학 동기',
+      job: '디자이너',
+      phone: '010-1234-5678',
+      howWeMet: '해커톤',
       lastContactAt: ts,
       nextReminderAt: ts + 1000,
       birthday: '03-15',
@@ -138,9 +142,21 @@ describe('relationship intelligence', () => {
     expect(node?.closeness).toBe(5)
     expect(node?.tier).toBe(1)
     expect(node?.age).toBe(55)
+    expect(node?.relation).toBe('대학 동기')
+    expect(node?.job).toBe('디자이너')
+    expect(node?.phone).toBe('010-1234-5678')
+    expect(node?.howWeMet).toBe('해커톤')
     expect(node?.lastContactAt).toBe(ts)
     expect(node?.birthday).toBe('03-15')
     expect(node?.interests).toBe('러닝, 커피')
+  })
+
+  it('saveProfile persists detailed self-intro fields', async () => {
+    await provider.saveProfile({ job: '기획자', location: '서울', website: 'https://me.dev' })
+    const p = await provider.getProfile()
+    expect(p.job).toBe('기획자')
+    expect(p.location).toBe('서울')
+    expect(p.website).toBe('https://me.dev')
   })
 
   it('seed family has a generational hierarchy (tiers)', async () => {

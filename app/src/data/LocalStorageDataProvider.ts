@@ -14,7 +14,7 @@ import type {
 } from '../domain/types'
 import type { AddNodeInput, DataProvider } from './DataProvider'
 import { inviteToken, uid } from '../lib/id'
-import { ME, SELF_NODE, makeMatchedUserNetwork, makeSeed, type Dataset } from './seed'
+import { CONTACT_DEFAULTS, ME, SELF_NODE, makeMatchedUserNetwork, makeSeed, type Dataset } from './seed'
 
 const STORAGE_KEY = 'cosmonodes:v1'
 
@@ -51,11 +51,23 @@ export class LocalStorageDataProvider implements DataProvider {
             if (n.closeness === undefined) n.closeness = 3
             if (n.tier === undefined) n.tier = 0
             if (n.age === undefined) n.age = null
+            if (n.relation === undefined) n.relation = ''
+            if (n.job === undefined) n.job = ''
+            if (n.location === undefined) n.location = ''
+            if (n.phone === undefined) n.phone = ''
+            if (n.email === undefined) n.email = ''
+            if (n.howWeMet === undefined) n.howWeMet = ''
             if (n.lastContactAt === undefined) n.lastContactAt = null
             if (n.nextReminderAt === undefined) n.nextReminderAt = null
             if (n.birthday === undefined) n.birthday = null
             if (n.interests === undefined) n.interests = ''
           }
+          const p = parsed.profile as Partial<Profile>
+          if (p.job === undefined) p.job = ''
+          if (p.location === undefined) p.location = ''
+          if (p.birthday === undefined) p.birthday = ''
+          if (p.interests === undefined) p.interests = ''
+          if (p.website === undefined) p.website = ''
           return parsed
         } catch {
           /* fall through to fresh seed */
@@ -130,6 +142,7 @@ export class LocalStorageDataProvider implements DataProvider {
       closeness: 3,
       tier: 0,
       age: null,
+      ...CONTACT_DEFAULTS,
       lastContactAt: null,
       nextReminderAt: null,
       birthday: null,
@@ -158,6 +171,12 @@ export class LocalStorageDataProvider implements DataProvider {
     if (patch.closeness !== undefined) node.closeness = patch.closeness
     if (patch.tier !== undefined) node.tier = patch.tier
     if (patch.age !== undefined) node.age = patch.age
+    if (patch.relation !== undefined) node.relation = patch.relation
+    if (patch.job !== undefined) node.job = patch.job
+    if (patch.location !== undefined) node.location = patch.location
+    if (patch.phone !== undefined) node.phone = patch.phone
+    if (patch.email !== undefined) node.email = patch.email
+    if (patch.howWeMet !== undefined) node.howWeMet = patch.howWeMet
     if (patch.lastContactAt !== undefined) node.lastContactAt = patch.lastContactAt
     if (patch.nextReminderAt !== undefined) node.nextReminderAt = patch.nextReminderAt
     if (patch.birthday !== undefined) node.birthday = patch.birthday
