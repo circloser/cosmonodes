@@ -83,6 +83,8 @@ export function makeSeed(): Dataset {
     tier: number
     age: number | null
     relation: string
+    /** Label of the node this person branches from (default: self). */
+    linkFrom?: string
     lastDays: number
     reminderDays: number | null
     birthday: string | null
@@ -90,7 +92,7 @@ export function makeSeed(): Dataset {
   }
   const seedContacts: Seed[] = [
     // 가족 — generational hierarchy (조부모 +2, 부모 +1, 형제 0)
-    { label: '할머니', note: '가족 · 명절마다 방문', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 2, age: 78, relation: '조모', lastDays: 10, reminderDays: 3, birthday: '01-09', interests: '가족, 텃밭' },
+    { label: '할머니', note: '가족 · 명절마다 방문', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 2, age: 78, relation: '조모', linkFrom: '엄마', lastDays: 10, reminderDays: 3, birthday: '01-09', interests: '가족, 텃밭' },
     { label: '엄마', note: '가족 · 매주 일요일 통화', strength: 'verified', groupId: 'g_family', closeness: 5, tier: 1, age: 55, relation: '어머니', lastDays: 2, reminderDays: 5, birthday: '03-15', interests: '가족, 요리' },
     { label: '아빠', note: '가족 · 주말 등산', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 1, age: 58, relation: '아버지', lastDays: 6, reminderDays: 12, birthday: '09-02', interests: '등산, 바둑' },
     { label: '형', note: '형제 · 게임 친구', strength: 'verified', groupId: 'g_family', closeness: 4, tier: 0, age: 30, relation: '형', lastDays: 3, reminderDays: null, birthday: '05-20', interests: '게임, 축구' },
@@ -102,6 +104,7 @@ export function makeSeed(): Dataset {
 
   const nodes: NodeRecord[] = []
   const edges: EdgeRecord[] = []
+  const labelToId = new Map<string, string>()
 
   for (const c of seedContacts) {
     const node: NodeRecord = {
@@ -123,11 +126,16 @@ export function makeSeed(): Dataset {
       createdAt: now,
     }
     nodes.push(node)
+    labelToId.set(c.label, node.id)
+  }
+  // edges: most branch from self, but e.g. 할머니 branches from 엄마 (조부모는 부모 경유)
+  for (const c of seedContacts) {
+    const fromId = c.linkFrom ? labelToId.get(c.linkFrom) ?? SELF_NODE : SELF_NODE
     edges.push({
       id: uid('edge'),
       ownerId: ME,
-      fromNodeId: SELF_NODE,
-      toNodeId: node.id,
+      fromNodeId: fromId,
+      toNodeId: labelToId.get(c.label) as string,
       strength: c.strength,
     })
   }

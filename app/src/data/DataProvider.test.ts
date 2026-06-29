@@ -186,3 +186,30 @@ describe('relationship intelligence', () => {
     expect(ownedLinks.every((l) => typeof l.closeness === 'number')).toBe(true)
   })
 })
+
+describe('relationships (edges between people)', () => {
+  let provider: LocalStorageDataProvider
+
+  beforeEach(() => {
+    provider = freshProvider()
+  })
+
+  it('grandparent branches from a parent, not from self', async () => {
+    const nodes = await provider.listNodes()
+    const edges = await provider.listEdges()
+    const grandma = nodes.find((n) => n.label === '할머니')
+    const mom = nodes.find((n) => n.label === '엄마')
+    const edge = edges.find((e) => e.fromNodeId === grandma?.id || e.toNodeId === grandma?.id)
+    const other = edge?.fromNodeId === grandma?.id ? edge?.toNodeId : edge?.fromNodeId
+    expect(other).toBe(mom?.id)
+    expect(other).not.toBe('self')
+  })
+
+  it('can connect and disconnect two non-self nodes', async () => {
+    const nodes = await provider.listNodes()
+    const edge = await provider.addEdge(nodes[0].id, nodes[1].id, 'verified')
+    expect((await provider.listEdges()).some((e) => e.id === edge.id)).toBe(true)
+    await provider.deleteEdge(edge.id)
+    expect((await provider.listEdges()).some((e) => e.id === edge.id)).toBe(false)
+  })
+})

@@ -31,6 +31,7 @@ interface GraphStore {
   updateNode: (id: string, patch: NodePatch) => Promise<void>
   removeNode: (id: string) => Promise<void>
   connect: (fromNodeId: string, toNodeId: string) => Promise<void>
+  disconnect: (edgeId: string) => Promise<void>
   invite: (nodeId: string) => Promise<MatchRecord>
   acceptInvite: (token: string) => Promise<void>
   requestIntro: (farNodeId: string) => Promise<void>
@@ -113,7 +114,12 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   },
 
   connect: async (fromNodeId, toNodeId) => {
-    await provider.addEdge(fromNodeId, toNodeId, 'pending')
+    await provider.addEdge(fromNodeId, toNodeId, 'verified')
+    await get().refresh()
+  },
+
+  disconnect: async (edgeId) => {
+    await provider.deleteEdge(edgeId)
     await get().refresh()
   },
 
