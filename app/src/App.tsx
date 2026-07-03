@@ -114,9 +114,9 @@ export default function App() {
       )}
 
       {selected && (
-        <div className="fixed left-4 top-20 z-[70] lg:left-64">
+        <aside className="glass-hud animate-slide-in-left fixed bottom-0 left-0 top-14 z-[60] w-80 max-w-[88vw] overflow-hidden border-r border-white/10">
           <NodeCard key={selected.id} node={selected} onClose={() => setSelected(null)} />
-        </div>
+        </aside>
       )}
 
       {showGroups && (

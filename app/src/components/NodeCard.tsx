@@ -157,7 +157,7 @@ export default function NodeCard({ node, onClose }: Props) {
   ]
 
   return (
-    <div className="glass-card animate-fade-up max-h-[78vh] w-72 overflow-y-auto rounded-xl p-5 shadow-2xl">
+    <div className="h-full w-full overflow-y-auto p-5">
       <div className="mb-3 flex items-start justify-between">
         <span className="label-mono text-[11px] uppercase tracking-wider text-nebula-blue">{degreeLabel}</span>
         <button onClick={onClose} className="text-on-surface-variant hover:text-white" aria-label="닫기">✕</button>

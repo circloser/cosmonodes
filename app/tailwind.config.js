@@ -55,12 +55,17 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'slide-in-left': {
+          '0%': { opacity: '0', transform: 'translateX(-16px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
       },
       animation: {
         'pulse-glow': 'pulse-glow 4s ease-in-out infinite',
         'supernova-burst': 'supernova-burst 0.8s ease-out forwards',
         twinkle: 'twinkle 3s ease-in-out infinite',
         'fade-up': 'fade-up 0.3s ease-out forwards',
+        'slide-in-left': 'slide-in-left 0.22s ease-out forwards',
       },
     },
   },
