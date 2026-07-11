@@ -12,6 +12,19 @@ export function kindLabel(k: GroupKind): string {
   return KIND_OPTIONS.find((o) => o.key === k)?.label ?? '일반'
 }
 
+/** Generational tiers used by the hierarchy view and the contact form. */
+export const TIER_OPTIONS: Array<{ value: number; label: string }> = [
+  { value: 2, label: '조부모' },
+  { value: 1, label: '부모' },
+  { value: 0, label: '동년배' },
+  { value: -1, label: '자녀' },
+  { value: -2, label: '손주' },
+]
+
+export function tierLabel(t: number): string {
+  return t >= 2 ? '조부모' : t === 1 ? '부모' : t === 0 ? '나·동년배' : t === -1 ? '자녀' : '손주'
+}
+
 /** Which detailed contact fields are relevant for a given group category. */
 export interface KindFields {
   tier: boolean

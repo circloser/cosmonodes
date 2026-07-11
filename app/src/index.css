@@ -22,6 +22,41 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Thin cosmic scrollbar (sidebar, modals, panels) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.25) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.25);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 140, 248, 0.45);
+}
+
+/* Keyboard focus — subtle nebula ring instead of the UA default */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.6);
+  outline-offset: 2px;
+}
+
+/* Native dropdown options render on a dark surface */
+select.input-cosmic option {
+  background: #151b2d;
+  color: #dce1fb;
+}
+
 @layer components {
   .glass-card {
     background: rgba(255, 255, 255, 0.04);
