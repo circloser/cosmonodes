@@ -111,20 +111,21 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds,
       }
       fg.d3Force('radial', null)
       fg.d3Force('cluster', null)
-      fg.d3Force('link')?.strength?.(0.05)
-      fg.d3Force('charge')?.strength?.(-150)
-      fg.d3Force('vertical', verticalForce(hierarchySort, 0.5))
+      fg.d3Force('link')?.strength?.(0.04)
+      fg.d3Force('charge')?.strength?.(-120)
+      fg.d3Force('vertical', verticalForce(hierarchySort, 0.3))
     } else {
-      // cosmos: closeness rings + gentle group affinity
+      // cosmos: closeness rings as a soft *preference* — dragged stars are free
+      // to live where they were dropped instead of being pulled back
       if (self) {
         self.fx = 0
         self.fy = 0
       }
       fg.d3Force('vertical', null)
-      fg.d3Force('link')?.strength?.(0.12)
-      fg.d3Force('charge')?.strength?.(-80)
-      fg.d3Force('radial', radialRingForce(0.55))
-      fg.d3Force('cluster', clusterForce(0.03))
+      fg.d3Force('link')?.strength?.(0.06)
+      fg.d3Force('charge')?.strength?.(-60)
+      fg.d3Force('radial', radialRingForce(0.14))
+      fg.d3Force('cluster', clusterForce(0.02))
     }
 
     fg.d3ReheatSimulation()
@@ -262,10 +263,10 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds,
         nodeId="id"
         nodeRelSize={1}
         enableNodeDrag
-        cooldownTicks={220}
+        cooldownTicks={300}
         warmupTicks={20}
-        d3VelocityDecay={0.2}
-        d3AlphaDecay={0.0145}
+        d3VelocityDecay={0.55}
+        d3AlphaDecay={0.01}
         nodeLabel={(n: object) => {
           const node = n as FGNode
           return node.degree === 2 ? '한 다리 건너 ✦' : node.label
