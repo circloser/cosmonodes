@@ -58,12 +58,20 @@ function signature(g: GraphData): string {
 const GUIDE_TEXT = 'rgba(196,199,200,0.45)'
 const GUIDE_FONT = '600 5px "Plus Jakarta Sans", sans-serif'
 
+function endId(end: string | FGNode): string {
+  return typeof end === 'string' ? end : end.id
+}
+
 export default function GraphView({ graph, onSelect, highlightIds, attentionIds, layoutMode, hierarchySort }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fgRef = useRef<ForceGraphHandle | null>(null)
   const [size, setSize] = useState({ w: 800, h: 600 })
+  // hover state lives in a ref: paint accessors run every frame, no re-render needed
+  const hoverRef = useRef<{ id: string | null; links: Set<string> }>({ id: null, links: new Set() })
 
   const sig = signature(graph)
+  // link particles are pure delight — keep them off when the graph is perf-heavy
+  const particlesOn = graph.nodes.length <= 120
   // Clone into mutable objects the force engine can annotate with x/y/vx/vy.
   const data = useMemo(() => {
     const nodes = graph.nodes.map((n) => ({ ...n })) as FGNode[]
@@ -181,14 +189,27 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds,
     const s = nodeStyle(node.degree, node.matched, node.color)
     const dim = highlightIds ? !(node.degree === 0 || highlightIds.has(node.id)) : false
     const isMatch = highlightIds ? node.degree !== 0 && highlightIds.has(node.id) : false
+    const hovered = hoverRef.current.id === node.id
+    const radius = hovered ? s.radius * 1.18 : s.radius
     ctx.save()
     ctx.globalAlpha = s.alpha * (dim ? 0.12 : 1)
     ctx.shadowColor = s.glow
-    ctx.shadowBlur = dim ? 0 : s.glowBlur
+    ctx.shadowBlur = dim ? 0 : hovered ? s.glowBlur * 2 : s.glowBlur
     ctx.beginPath()
-    ctx.arc(node.x, node.y, s.radius, 0, Math.PI * 2)
+    ctx.arc(node.x, node.y, radius, 0, Math.PI * 2)
     ctx.fillStyle = s.fill
     ctx.fill()
+    if (hovered) {
+      // soft halo ring around the hovered star
+      ctx.shadowBlur = 0
+      ctx.globalAlpha = 0.55
+      ctx.lineWidth = 1
+      ctx.strokeStyle = s.glow
+      ctx.beginPath()
+      ctx.arc(node.x, node.y, radius + 4, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.globalAlpha = s.alpha
+    }
     if (node.degree === 0) {
       ctx.shadowBlur = 0
       ctx.lineWidth = 1.5
@@ -273,21 +294,48 @@ export default function GraphView({ graph, onSelect, highlightIds, attentionIds,
           node.fx = node.x
           node.fy = node.y
         }}
+        onNodeHover={(n: object | null) => {
+          const node = n as FGNode | null
+          if (!node) {
+            hoverRef.current = { id: null, links: new Set() }
+          } else {
+            const links = new Set<string>()
+            for (const l of data.links) {
+              if (endId(l.source) === node.id || endId(l.target) === node.id) links.add(l.id)
+            }
+            hoverRef.current = { id: node.id, links }
+          }
+          if (containerRef.current) containerRef.current.style.cursor = node ? 'pointer' : ''
+        }}
         onRenderFramePre={drawGuides}
-        linkColor={(l: object) =>
-          (l as FGLink).faint
+        linkColor={(l: object) => {
+          const link = l as FGLink
+          if (hoverRef.current.links.has(link.id)) {
+            return link.faint ? 'rgba(129,140,248,0.5)' : 'rgba(56,189,248,0.95)'
+          }
+          return link.faint
             ? 'rgba(129,140,248,0.18)'
-            : (l as FGLink).strength === 'verified'
+            : link.strength === 'verified'
               ? 'rgba(56,189,248,0.65)'
               : 'rgba(129,140,248,0.4)'
-        }
+        }}
         linkWidth={(l: object) => {
           const link = l as FGLink
-          if (link.faint) return 0.5
+          const boost = hoverRef.current.links.has(link.id) ? 1.6 : 1
+          if (link.faint) return 0.5 * boost
           const c = link.closeness ?? 3
-          return 0.6 + c * 0.45 // closeness 1→1.05, 5→2.85
+          return (0.6 + c * 0.45) * boost // closeness 1→1.05, 5→2.85
         }}
         linkLineDash={(l: object) => ((l as FGLink).faint || (l as FGLink).strength === 'pending' ? [3, 4] : null)}
+        linkDirectionalParticles={(l: object) => {
+          const link = l as FGLink
+          // flowing light on living (verified) links; off in perf-heavy graphs
+          if (!particlesOn || link.faint) return 0
+          return link.strength === 'verified' ? 2 : 0
+        }}
+        linkDirectionalParticleSpeed={0.004}
+        linkDirectionalParticleWidth={1.7}
+        linkDirectionalParticleColor={() => 'rgba(125,211,252,0.9)'}
         nodeCanvasObject={paintNode}
         nodePointerAreaPaint={(n: object, color: string, ctx: CanvasRenderingContext2D) => {
           const node = n as FGNode

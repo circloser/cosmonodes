@@ -3,6 +3,7 @@ import type { GraphNode } from './domain/types'
 import { useGraphStore } from './store/useGraphStore'
 import { filterGraphByGroups } from './lib/graphFilter'
 import { reminderState } from './lib/datetime'
+import { downloadUniverseSnapshot } from './lib/snapshot'
 import CosmicBackground from './components/CosmicBackground'
 import GraphView from './components/GraphView'
 import NodeCard from './components/NodeCard'
@@ -69,6 +70,15 @@ export default function App() {
 
   const matchedCount = matches.filter((m) => m.status === 'accepted').length
 
+  const snapshot = () => {
+    const canvas = document.querySelector<HTMLCanvasElement>('.force-graph-container canvas')
+    if (!canvas) return
+    downloadUniverseSnapshot(canvas, {
+      title: `${profile?.displayName ?? '나'}의 우주`,
+      subtitle: `별 ${nodes.length}개 · ${new Date().toLocaleDateString('ko-KR')}`,
+    })
+  }
+
   return (
     <div className="relative h-full w-full overflow-hidden">
       <CosmicBackground />
@@ -98,6 +108,7 @@ export default function App() {
         perfMode={perfMode}
         onAddStar={() => setShowAdd(true)}
         onQuickAdd={() => setShowQuickAdd(true)}
+        onSnapshot={snapshot}
         onOpenProfile={() => setShowProfile(true)}
         onOpenGroups={() => setShowGroups((v) => !v)}
         onTogglePerf={togglePerfMode}

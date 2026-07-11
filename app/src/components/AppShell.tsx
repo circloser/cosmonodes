@@ -9,6 +9,7 @@ interface Props {
   perfMode: boolean
   onAddStar: () => void
   onQuickAdd: () => void
+  onSnapshot: () => void
   onOpenProfile: () => void
   onOpenGroups: () => void
   onTogglePerf: () => void
@@ -23,6 +24,7 @@ export default function AppShell({
   perfMode,
   onAddStar,
   onQuickAdd,
+  onSnapshot,
   onOpenProfile,
   onOpenGroups,
   onTogglePerf,
@@ -97,6 +99,9 @@ export default function AppShell({
         <button onClick={onQuickAdd} className="btn-ghost flex items-center justify-center gap-2 py-2.5 text-sm">
           여러 명 빠르게
         </button>
+        <button onClick={onSnapshot} className="btn-ghost flex items-center justify-center gap-2 py-2.5 text-sm" title="내 우주를 이미지로 저장">
+          ✦ 우주 스냅샷
+        </button>
         <p className="mt-auto text-xs leading-relaxed text-on-surface-variant/70">
           노드를 드래그해 우주를 펼쳐보세요. 별을 클릭하면 관계를 관리할 수 있어요.
         </p>
@@ -121,6 +126,9 @@ export default function AppShell({
         <nav className="glass-hud flex w-full items-center justify-around py-3">
           <button onClick={onQuickAdd} className="label-mono text-[11px] text-on-surface-variant">
             빠른추가
+          </button>
+          <button onClick={onSnapshot} className="label-mono text-[11px] text-on-surface-variant">
+            스냅샷
           </button>
           <button onClick={onOpenProfile} className="label-mono text-[11px] text-on-surface-variant">
             프로필
